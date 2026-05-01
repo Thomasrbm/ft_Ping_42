@@ -1,20 +1,6 @@
 
 
 
-- refaire les flag avec les valeure de chaque flags.
-
-
-
-faire un return direct avec printf pour flag -V et -? 
-
-
-creer socket : socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)
-
-
-
-si ttl : setsockopt(IP_TTL) + SO_RCVTIMEO
-
-
 
 
 
@@ -27,9 +13,6 @@ structure ICMP
 
 creer une reply avec les bytes pour le echo dans le header icmp
 
-
-
-sigint handler
 
 
 recvgfrom boucle 

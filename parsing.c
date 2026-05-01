@@ -118,7 +118,7 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags)
             return 0;
         i++;
     }
-    if (ac - i != 1)
+    if (!flags->has_help && !flags->has_version && ac - i != 1)
     {
         dprintf(2, "ft_ping: usage error: Destination address required\n");
         print_usage();

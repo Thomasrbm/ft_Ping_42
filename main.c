@@ -26,8 +26,13 @@ int main(int ac, char **av)
 
     if (!parsing(ac, av, &arg_offset, &flags))
         return 1;
+    if (flags.has_help || flags.has_version)
+    {
+        handle_flags(&flags);
+        return 0;
+    }
     if (!get_ip(av, &arg_offset, target_ip))
         return 1;
-    
+    icmp(&flags);
     return 0;
 }

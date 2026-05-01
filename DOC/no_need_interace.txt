@@ -1,0 +1,5 @@
+
+ping au niveau de l ip donc AF_INET dans le socket pas AF_PACKET
+
+
+donc le kernerl gere l interface etc tout seul

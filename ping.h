@@ -8,6 +8,9 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/time.h>
 
 // -V => prend le dessus en 2e 
 
@@ -49,6 +52,9 @@ typedef struct s_flags
 
 int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 
+void handle_flags(t_flags *flags);
+
+int icmp(t_flags *flags);
 
 
 int ft_strcmp(const char *s1, const char *s2);
