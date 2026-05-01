@@ -13,7 +13,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <netinet/ip_icmp.h>
-#include <netinet/ip.h> 
+#include <netinet/ip.h>
+#include <arpa/inet.h>
 
 #define DEFAULT_PAYLOAD_SIZE 56
 #define ICMP_HDR_SIZE        sizeof(struct icmphdr)

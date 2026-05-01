@@ -3,8 +3,31 @@
 
 void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip)
 {
-    (void)reply_struc;
-    (void)from_ip;
+    char src_ip_str[INET_ADDRSTRLEN]; // taille max ip v4
+    inet_ntop(AF_INET, &from_ip->sin_addr, src_ip_str, INET_ADDRSTRLEN); // converit en string hexa l ip du replyer
+
+    if (reply_struc->has_timestamp)
+    {
+        struct timeval recv_time;
+        gettimeofday(&recv_time, NULL); // heure actuel
+
+        // difference entre temps reception et temps actuel
+        long delta_us = (recv_time.tv_sec - reply_struc->send_time.tv_sec) * 1000000L
+                    + (recv_time.tv_usec - reply_struc->send_time.tv_usec);
+
+        // en ms
+        double rtt_ms = delta_us / 1000.0;
+
+        printf("%zu bytes from %s: icmp_seq=%u ttl=%u time=%.3f ms\n",
+               reply_struc->icmp_size, src_ip_str,
+               reply_struc->seq, reply_struc->ttl, rtt_ms);
+    }
+    else
+     {
+        printf("%zu bytes from %s: icmp_seq=%u ttl=%u\n",
+               reply_struc->icmp_size, src_ip_str,
+               reply_struc->seq, reply_struc->ttl);
+    }
 }
 
 // verifier si c est bien la reponse pour moi (rapport a ma request)
