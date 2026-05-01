@@ -14,20 +14,11 @@
 
 // -V => prend le dessus en 2e 
 
-// -v => tous activable en meme temps
-// -n 
-// -w 
-// -W 
-// -s
-// -i
-// -q
-// -c
-
 // '-?'   => prend le dessus sur tous  + entre quote sur zsh
 
 typedef struct s_flags
 {
-    int     has_version;    // -V : affiche la version et quitte
+    int     has_version;    // -V
 
     int     has_verbose;    // -v 
     int     has_numeric;    // -n
@@ -38,7 +29,7 @@ typedef struct s_flags
     int     has_interval;   // -i
     int     has_count;      // -c
 
-    int     has_help;       // -? : affiche l'aide et quitte
+    int     has_help;       // -?
 
     int     deadline_value;       // -w : valeur du deadline global (en sec)
     int     timeout_value;        // -W : valeur du timeout par reply
@@ -50,12 +41,28 @@ typedef struct s_flags
 }   t_flags;
 
 
+// struct icmphdr {
+//     __u8   type;        // 8 pour Echo Request, 0 pour Echo Reply
+//     __u8   code;        // 0
+//     __sum16 checksum;
+//     union {
+//         struct {
+//             __be16 id; // pid du process sousvent
+//             __be16 sequence; // compteur incremente a chaque paquet sent
+//         } echo;
+//         __be32 gateway; // pour redirect
+//         struct {  // si framentation needed
+//             __be16 __unused;
+//             __be16 mtu;
+//         } frag;
+//     } un;
+// };
+
 int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 
 void handle_flags(t_flags *flags);
 
-int icmp(t_flags *flags);
-
+int icmp(t_flags *flags, uint8_t *target_ip);
 
 int ft_strcmp(const char *s1, const char *s2);
 void *ft_memset(void *s, int c, size_t n);
