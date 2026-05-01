@@ -28,5 +28,6 @@ int main(int ac, char **av)
         return 1;
     if (!get_ip(av, &arg_offset, target_ip))
         return 1;
+    
     return 0;
 }
