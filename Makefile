@@ -3,7 +3,7 @@ NAME    = ft_ping
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Werror
 
-SRCS    = main.c parsing.c utils.c handle_flag.c icmp.c icmp_reply.c
+SRCS    = main.c parsing.c utils.c handle_flag.c icmp.c icmp_reply.c socket.c packet.c stats.c
 OBJS    = $(addprefix objs/, $(SRCS:.c=.o))
 
 all: $(NAME)

@@ -88,6 +88,20 @@ typedef struct s_flags
 // };
 
 
+// stats accumulees pendant la session, affichees a la fin (--- ping statistics ---)
+typedef struct s_stats
+{
+    int             transmitted;     // paquets envoyes
+    int             received;        // replies valides
+    int             rtt_count;       // nb de RTT valides (payload >= 16)
+    double          rtt_min;
+    double          rtt_max;
+    double          rtt_sum;
+    double          rtt_sum_sq;
+    struct timeval  start_time;
+}   t_stats;
+
+
 typedef struct s_reply
 {
     // Header IP
@@ -113,10 +127,17 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 void handle_flags(t_flags *flags);
 
 int icmp(t_flags *flags, uint8_t *target_ip, char *hostname);
-int receive_reply(int sockfd, uint16_t seq, t_flags *flags);
+int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats);
+void print_stats(t_stats *stats, char *hostname);
 
+int setup_socket(t_flags *flags);
+unsigned short compute_checksum(void *data, int len);
+uint8_t *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size);
+int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size);
+void print_ping_prompt(uint8_t *target_ip, char *hostname, t_flags *flags);
 
 int ft_strcmp(char *s1, char *s2);
 void *ft_memset(void *s, int c, size_t n);
 void *ft_memcpy(void *dst, const void *src, size_t n);
 int ft_isnumber(char *s);
+double ft_sqrt(double x);

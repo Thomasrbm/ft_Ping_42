@@ -55,3 +55,14 @@ void *ft_memcpy(void *dst, const void *src, size_t n)
 	}
 	return (dst);
 }
+
+// le mdev =
+double ft_sqrt(double x)
+{
+    if (x <= 0)
+        return 0;
+    double s = x;
+    for (int i = 0; i < 20; i++)
+        s = 0.5 * (s + x / s);
+    return s;
+}

@@ -1,7 +1,6 @@
 #include "ping.h"
 
-
-void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *flags)
+void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *flags, double rtt_ms)
 {
     if (flags->has_quiet) // -q : on n affiche pas les replies (que stat de fin)
         return;
@@ -11,16 +10,6 @@ void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *f
 
     if (reply_struc->has_timestamp)
     {
-        struct timeval recv_time;
-        gettimeofday(&recv_time, NULL); // heure actuel
-
-        // difference entre temps reception et temps actuel
-        long delta_us = (recv_time.tv_sec - reply_struc->send_time.tv_sec) * 1000000L
-                    + (recv_time.tv_usec - reply_struc->send_time.tv_usec);
-
-        // en ms
-        double rtt_ms = delta_us / 1000.0;
-
         printf("%zu bytes from %s: icmp_seq=%u ttl=%u time=%.3f ms\n",
                reply_struc->icmp_size, src_ip_str,
                reply_struc->seq, reply_struc->ttl, rtt_ms);
@@ -92,7 +81,7 @@ int parse_reply(uint8_t *reply_buffer, ssize_t buffer_len, t_reply *reply_struc)
     return 1;
 }
 
-int receive_reply(int sockfd, uint16_t seq, t_flags *flags)
+int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats)
 {
     uint8_t reply_buffer[1024];
     struct sockaddr_in from_ip;
@@ -118,6 +107,30 @@ int receive_reply(int sockfd, uint16_t seq, t_flags *flags)
     if (!validate_reply(&reply_struc, seq))
         return 0;
 
-    display_reply(&reply_struc, &from_ip, flags);
+    double rtt_ms = 0.0;
+    if (reply_struc.has_timestamp)
+    {
+        struct timeval recv_time;
+        gettimeofday(&recv_time, NULL); // heure actuelle
+
+        // difference entre temps reception et temps actuel
+        long delta_us = (recv_time.tv_sec - reply_struc.send_time.tv_sec) * 1000000L
+                    + (recv_time.tv_usec - reply_struc.send_time.tv_usec);
+        
+        // en ms
+        rtt_ms = delta_us / 1000.0;
+
+        // update stats RTT (min/max/sum/sum^2)
+        if (stats->rtt_count == 0 || rtt_ms < stats->rtt_min)
+            stats->rtt_min = rtt_ms;
+        if (rtt_ms > stats->rtt_max)
+            stats->rtt_max = rtt_ms;
+        stats->rtt_sum += rtt_ms;
+        stats->rtt_sum_sq += rtt_ms * rtt_ms;
+        stats->rtt_count++;
+    }
+    stats->received++;
+
+    display_reply(&reply_struc, &from_ip, flags, rtt_ms);
     return 1;
 }
