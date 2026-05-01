@@ -1,0 +1,49 @@
+ICMP = Internet Control Message Protocol.
+
+
+
+
+sert juste a controler et diagnostiquer le reseau.
+
+
+NE TRANSPORTE PAS DE DONNEES, controle juste.
+
+
+
+"Est-ce que cette machine est joignable ?" (ping)
+"Quel est le chemin vers cette destination ?" (traceroute)
+
+OU
+
+"Pourquoi mon paquet n'est pas arrivé ?" (Destination Unreachable)
+"Le paquet a vécu trop longtemps" (Time Exceeded)
+
+
+
+
+
+
+
+--------- DIFF avec IP
+
+
+
+IP n est jamais seul il sert a acheminer mais ne dit rien en lui meme
+
+c est un header ip.
+
+
+soit avec ICMP = donnes infos
+soit avec Tcp = achemine les paquets
+
+
+etc : 
+
+
+[ IP ][ TCP ][ HTTP ]      → web
+[ IP ][ TCP ][ SSH ]       → terminal distant
+[ IP ][ UDP ][ DNS ]       → résolution de noms
+[ IP ][ UDP ][ DHCP ]      → attribution d'IP
+[ IP ][ ICMP ]             → ping, traceroute, erreurs
+[ IP ][ OSPF ]             → routage entre routeurs
+[ IP ][ IPsec ]            → VPN chiffré

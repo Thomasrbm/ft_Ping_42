@@ -1,0 +1,43 @@
+
+
+ICMP TYPE 3 - DESTINATION UNREACHABLE
+=====================================
+Type | Code | Signification
+-----|------|--------------------------------------------------
+  3  |   0  | Network Unreachable (réseau injoignable)
+  3  |   1  | Host Unreachable (machine injoignable)
+  3  |   2  | Protocol Unreachable (protocole non supporté)
+  3  |   3  | Port Unreachable (port fermé)
+  3  |   4  | Fragmentation Needed (paquet trop gros)
+  3  |   5  | Source Route Failed
+  3  |   6  | Destination Network Unknown
+  3  |   7  | Destination Host Unknown
+  3  |   9  | Network Administratively Prohibited (firewall)
+  3  |  10  | Host Administratively Prohibited (firewall)
+  3  |  13  | Communication Administratively Prohibited
+
+
+
+
+
+ICMP TYPE 11 - TIME EXCEEDED
+============================
+Type | Code | Signification
+-----|------|--------------------------------------------------
+ 11  |   0  | TTL Exceeded in Transit (TTL atteint 0 sur un routeur)
+ 11  |   1  | Fragment Reassembly Time Exceeded (perte de fragments)
+
+
+
+
+
+
+ICMP TYPE 8 - REQUEST / REPLY
+=============================================
+Type | Code | Signification
+-----|------|--------------------------------------------------
+  8  |   0  | Echo Request
+  0  |   0  | Echo Reply
+
+
+

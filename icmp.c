@@ -73,20 +73,76 @@ unsigned short compute_checksum(void *data, int len)
 }
 
 
+// build header icmp  + payload
+uint8_t       *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size)
+{
+    size_t payload_size;
+    size_t total_size;
+
+    // flag -s  pour taille precise ou non
+    payload_size = flags->has_packetsize ? flags->packetsize_value : DEFAULT_PAYLOAD_SIZE;
+    total_size = ICMP_HDR_SIZE + payload_size;
+
+    uint8_t *packet;
+    packet = calloc(1, total_size);
+    if (!packet)
+        return NULL;
+
+    struct icmphdr *icmp_header = (struct icmphdr *)packet;
+
+    icmp_header->type = ICMP_ECHO;     // 8 = request
+    icmp_header->code = 0;              // pas de sous-type pour Echo
+    icmp_header->checksum = 0;  // remplir apres
+
+     // host to netword (little to big) x86 to protocol
+    icmp_header->un.echo.id = htons(getpid() & 0xFFFF); // pid du echo current, pour distinguer plusieur ping parralleles
+    icmp_header->un.echo.sequence = htons(seq); // identifie numero du paquet (dans la boucle d envoit de plusieur paquets)
+
+    // RTT = temps_de_reception - temps_d_envoi = le temps de distance + vitesse reseau + le temps de traitement
+    // ou aller + traitement + retour  ===> les ms
+    if (payload_size >= sizeof(struct timeval)) // timeval fait 16 octet, on ne peut pas faire le RTT si payload trop petit. si ping -s0 ou -s5 temps sera valeur bidon
+    {
+        // Buffer :  [type][code][cksum][cksum][id][id][seq][seq] -> [?][?][?] avance la.
+        struct timeval *send_time = (struct timeval *)(packet + ICMP_HDR_SIZE);
+        gettimeofday(send_time, NULL); // y stock moment ou packet fait
+    }
+
+    icmp_header->checksum = compute_checksum(packet, total_size);
+    *packet_size = total_size;
+    return packet;
+}
+
+int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size)
+{
+    struct sockaddr_in dest;
+
+    (void)flags;
+    ft_memset(&dest, 0, sizeof(dest));      // sin_zero à 0
+    dest.sin_family = AF_INET;              //  IPv4
+    dest.sin_port = 0;                       // icmp use pas port
+    ft_memcpy(&dest.sin_addr, target_ip, 4); // copie ip cible
+
+    if (sendto(socket_fd, icmp_packet, packet_size, 0,
+            (struct sockaddr *)&dest, sizeof(dest)) < 0)
+    {
+        dprintf(2, "sendto: %s\n", strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
 int icmp(t_flags *flags, uint8_t *target_ip)
 {
     int socket_fd;
+    void *icmp_packet;
+    uint16_t seq = 1;
+    size_t packet_size = 0;
 
-    (void)target_ip;
     socket_fd = setup_socket(flags);
     if (socket_fd < 0)
         return 0;
-    handle_flags(flags);
-
-
-    struct icmphdr;
-
-
+    icmp_packet = build_packet(flags, seq, &packet_size);
+    send_packet(flags, target_ip, socket_fd, icmp_packet, packet_size);
 
     return 1;
 }

@@ -1,0 +1,16 @@
+
+
+
+sequence = identifier du numero du paquet courrant en train 
+d etre send
+
+
+
+int16_t seq = 1;
+
+while (boucle d'envoi) {
+    build_packet(flags, seq, &size);
+    sendto(...);
+    recvfrom(...);
+    seq++;       // prochain paquet sera seq=2, puis 3, puis 4...
+}

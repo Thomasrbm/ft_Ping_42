@@ -11,6 +11,11 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <netinet/ip_icmp.h>
+
+#define DEFAULT_PAYLOAD_SIZE 56
+#define ICMP_HDR_SIZE        sizeof(struct icmphdr)
 
 // -V => prend le dessus en 2e 
 
@@ -56,6 +61,14 @@ typedef struct s_flags
 //             __be16 mtu;
 //         } frag;
 //     } un;
+// };
+
+
+// struct sockaddr_in {
+//     sa_family_t    sin_family;    // toujours AF_INET pour IPv4
+//     in_port_t      sin_port;      // port (inutile pour ICMP)
+//     struct in_addr sin_addr;      // l'IP destination
+//     char           sin_zero[8];   // padding, à mettre à zéro
 // };
 
 int parsing(int ac, char **av, int *arg_offset, t_flags *flags);

@@ -6,11 +6,6 @@
 
 
 
-
-structure ICMP
-
-
-
 creer une reply avec les bytes pour le echo dans le header icmp
 
 
