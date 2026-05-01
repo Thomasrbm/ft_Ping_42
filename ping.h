@@ -112,6 +112,8 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 void handle_flags(t_flags *flags);
 
 int icmp(t_flags *flags, uint8_t *target_ip);
+int receive_reply(int sockfd, uint16_t seq);
+
 
 int ft_strcmp(const char *s1, const char *s2);
 void *ft_memset(void *s, int c, size_t n);

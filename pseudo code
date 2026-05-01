@@ -1,32 +1,9 @@
 
 
-
-
-
-
-
-
-creer une reply avec les bytes pour le echo dans le header icmp
-
-
-
-recvgfrom boucle 
-boucle de sendto ()  ou cut sur -c 
-
-
-
-
-Calculer le RTT (timestamp envoi vs réception avec gettimeofday)
-
-
-
-Afficher chaque reply au format ping standard (64 bytes from X: icmp_seq=N ttl=N time=N ms)
-
-
-
-
 Gérer les erreurs ICMP (Destination Unreachable, Time Exceeded, etc.) en mode -v
 
+
+gerer les flags
 
 
 Free / close socket proprement à la fin
