@@ -86,6 +86,27 @@ typedef struct s_flags
 //     uint32_t     daddr;       // IP destination
 // };
 
+
+typedef struct s_reply
+{
+    // Header IP
+    uint8_t  ttl;             // TTL du paquet reçu (à afficher)
+    
+    // Header ICMP
+    uint8_t  type;            // ICMP_ECHOREPLY 0
+    uint8_t  code;            // code 0
+    uint16_t id;              // deja converti via ntohs
+    uint16_t seq;             // same
+    
+    // Tailles
+    size_t   icmp_size;       // taille totale ICMP (header + payload)
+    size_t   payload_size;    // taille du payload uniquement
+    
+    // Timestamp d'envoi
+    struct timeval send_time;
+    int            has_timestamp; // 1 si payload_size >= 16, sinon 0
+}   t_reply;
+
 int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 
 void handle_flags(t_flags *flags);

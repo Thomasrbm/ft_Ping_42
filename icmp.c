@@ -131,13 +131,30 @@ int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_pa
     return 0;
 }
 
+void display_reply()
+{
+
+}
+
+int validate_reply()
+{
+
+}
+
+
+int parse_reply(uint8_t *reply_buffer, ssize_t buffer_len, t_reply *reply_struc)
+{
+
+}
+
 int receive_reply(int sockfd, uint16_t seq)
 {
-    uint8_t recv_buffer[1024];
+    uint8_t reply_buffer[1024];
     struct sockaddr_in from_ip;
     socklen_t from_len = sizeof(from_ip);
+    t_reply *reply_struc;
 
-    ssize_t bytes_received = recvfrom(sockfd, recv_buffer, sizeof(recv_buffer), 0,
+    ssize_t bytes_received = recvfrom(sockfd, reply_buffer, sizeof(reply_buffer), 0,
                                 (struct sockaddr *)&from_ip, &from_len);
     if (bytes_received < 0)
     {
@@ -149,7 +166,14 @@ int receive_reply(int sockfd, uint16_t seq)
         dprintf(2, "recvfrom: %s\n", strerror(errno));
         return 0;
     }
-    
+    if (!parse_reply(reply_buffer, bytes_received, &reply_struc))
+        return 0;
+
+    if (!validate_reply(&reply_struc, seq))
+        return 0;
+
+    display_reply(&reply_struc, &from_ip);
+    return 1;
 }
 
 int icmp(t_flags *flags, uint8_t *target_ip)
