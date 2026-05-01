@@ -1,5 +1,21 @@
 #include "ping.h"
 
+int ft_isnumber(const char *s)
+{
+    if (!s || !*s)
+        return 0;
+    if (*s == '+')
+        s++;
+    if (!*s)
+        return 0;
+    while (*s)
+    {
+        if (!isdigit((unsigned char)*s))
+            return 0;
+        s++;
+    }
+    return 1;
+}
 
 int ft_strcmp(const char *s1, const char *s2)
 {

@@ -19,7 +19,13 @@ si ttl : setsockopt(IP_TTL) + SO_RCVTIMEO
 
 
 
+
+
 structure ICMP
+
+
+
+creer une reply avec les bytes pour le echo dans le header icmp
 
 
 

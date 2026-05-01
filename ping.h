@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 // -V => prend le dessus en 2e 
 
@@ -52,3 +54,4 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 int ft_strcmp(const char *s1, const char *s2);
 void *ft_memset(void *s, int c, size_t n);
 void *ft_memcpy(void *dst, const void *src, size_t n);
+int ft_isnumber(const char *s);
