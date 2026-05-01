@@ -34,5 +34,8 @@ int setup_socket(t_flags *flags)
         return -1;
 
     }
+    // -v : afficher les infos de socket
+    if (flags->has_verbose)
+        printf("ping: sock4.fd: %d (socktype: SOCK_RAW), sock6.fd: -1 (socktype: 0), hints.ai_family: AF_UNSPEC\n", socket_fd);
     return socket_fd;
 }

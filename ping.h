@@ -126,8 +126,9 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 
 void handle_flags(t_flags *flags);
 
-int icmp(t_flags *flags, uint8_t *target_ip, char *hostname);
+int icmp(t_flags *flags, uint8_t *target_ip, char *hostname, int socket_fd);
 int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats);
+uint16_t parse_error_original_seq(uint8_t *reply_buffer, ssize_t buffer_len);
 void print_stats(t_stats *stats, char *hostname);
 
 int setup_socket(t_flags *flags);
@@ -135,6 +136,8 @@ unsigned short compute_checksum(void *data, int len);
 uint8_t *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size);
 int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size);
 void print_ping_prompt(uint8_t *target_ip, char *hostname, t_flags *flags);
+void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc, uint16_t orig_seq);
+void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *flags, double rtt_ms);
 
 int ft_strcmp(char *s1, char *s2);
 void *ft_memset(void *s, int c, size_t n);

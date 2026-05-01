@@ -1,31 +1,35 @@
 #include "ping.h"
 
-void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *flags, double rtt_ms)
+// quand on recoit une erreur ICMP (type 3, 11, etc.), le paquet contient
+// l ip header originale + 8 octets du icmp original. on extrait la seq de l original
+// besoin de la sequence originel pour savoir quel packet a quelle erreur 
+uint16_t parse_error_original_seq(uint8_t *reply_buffer, ssize_t buffer_len)
 {
-    if (flags->has_quiet) // -q : on n affiche pas les replies (que stat de fin)
-        return;
+    struct iphdr   *target_ip;
+    size_t          target_ip_size;
+    struct iphdr   *our_ip;
+    size_t          our_ip_size;
+    struct icmphdr *our_icmp;
 
-    char src_ip_str[INET_ADDRSTRLEN]; // taille max ip v4
-    inet_ntop(AF_INET, &from_ip->sin_addr, src_ip_str, INET_ADDRSTRLEN); // converit en string hexa l ip du replyer
+    target_ip = (struct iphdr *)reply_buffer;
+    target_ip_size = target_ip->ihl * 4;
+    // si pas la place pour plus, faux packet
+    if ((size_t)buffer_len < target_ip_size + 8 + sizeof(struct iphdr))
+        return 0;
 
-    if (reply_struc->has_timestamp)
-    {
-        printf("%zu bytes from %s: icmp_seq=%u ttl=%u time=%.3f ms\n",
-               reply_struc->icmp_size, src_ip_str,
-               reply_struc->seq, reply_struc->ttl, rtt_ms);
-    }
-    else
-     {
-        printf("%zu bytes from %s: icmp_seq=%u ttl=%u\n",
-               reply_struc->icmp_size, src_ip_str,
-               reply_struc->seq, reply_struc->ttl);
-    }
+    our_ip = (struct iphdr *)(reply_buffer + target_ip_size + 8);
+    our_ip_size = our_ip->ihl * 4;
+    if ((size_t)buffer_len < target_ip_size + 8 + our_ip_size + 8)
+        return 0;
+
+    our_icmp = (struct icmphdr *)(reply_buffer + target_ip_size + 8 + our_ip_size);
+    return ntohs(our_icmp->un.echo.sequence);
 }
 
 // verifier si c est bien la reponse pour moi (rapport a ma request)
 int validate_reply(t_reply *reply_struc, uint16_t seq)
 {
-    // pas un ping echo reply
+    // pas un ping echo reply  == une erreur surement
     if (reply_struc->type != ICMP_ECHOREPLY)
         return 0;
     // notre pid donc bien retour de notre echo
@@ -56,7 +60,7 @@ int parse_reply(uint8_t *reply_buffer, ssize_t buffer_len, t_reply *reply_struc)
     // cast le void buffer en icmp header en jumpant par dessus le ip header
     icmp_response = (struct icmphdr *)(reply_buffer + ip_header_size);
 
-    reply_struc->type = icmp_response->type;
+    reply_struc->type = icmp_response->type; // maj si error ou echo reply
     reply_struc->code = icmp_response->code;
     reply_struc->id   = ntohs(icmp_response->un.echo.id);
     reply_struc->seq  = ntohs(icmp_response->un.echo.sequence);
@@ -105,7 +109,20 @@ int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats)
         return 0;
 
     if (!validate_reply(&reply_struc, seq))
+    {
+        // -v : les erreur flags
+        if (flags->has_verbose &&
+            (reply_struc.type == ICMP_DEST_UNREACH ||
+             reply_struc.type == ICMP_TIME_EXCEEDED ||
+             reply_struc.type == ICMP_REDIRECT ||
+             reply_struc.type == ICMP_SOURCE_QUENCH ||
+             reply_struc.type == ICMP_PARAMETERPROB))
+        {
+            uint16_t orig_seq = parse_error_original_seq(reply_buffer, bytes_received);
+            print_verbose_error(&from_ip, &reply_struc, orig_seq);
+        }
         return 0;
+    }
 
     double rtt_ms = 0.0;
     if (reply_struc.has_timestamp)
@@ -130,7 +147,6 @@ int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats)
         stats->rtt_count++;
     }
     stats->received++;
-
     display_reply(&reply_struc, &from_ip, flags, rtt_ms);
     return 1;
 }

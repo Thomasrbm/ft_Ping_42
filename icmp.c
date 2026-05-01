@@ -1,17 +1,11 @@
 #include "ping.h"
 
 
-int icmp(t_flags *flags, uint8_t *target_ip, char *hostname)
+int icmp(t_flags *flags, uint8_t *target_ip, char *hostname, int socket_fd)
 {
-    int      socket_fd;
     void    *icmp_packet;
     uint16_t seq = 1;
     size_t   packet_size = 0;
-
-
-    socket_fd = setup_socket(flags);
-    if (socket_fd < 0)
-        return 0;
 
     print_ping_prompt(target_ip, hostname, flags);
 

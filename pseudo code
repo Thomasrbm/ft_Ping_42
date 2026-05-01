@@ -1,9 +1,3 @@
 
 
-Gérer les erreurs ICMP (Destination Unreachable, Time Exceeded, etc.) en mode -v
-
-
-gerer les flags
-
-
-Free / close socket proprement à la fin
+Gérer les erreurs ICMP (Destination Unreachable, Time Exceeded, etc.) 
