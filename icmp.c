@@ -131,6 +131,27 @@ int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_pa
     return 0;
 }
 
+int receive_reply(int sockfd, uint16_t seq)
+{
+    uint8_t recv_buffer[1024];
+    struct sockaddr_in from_ip;
+    socklen_t from_len = sizeof(from_ip);
+
+    ssize_t bytes_received = recvfrom(sockfd, recv_buffer, sizeof(recv_buffer), 0,
+                                (struct sockaddr *)&from_ip, &from_len);
+    if (bytes_received < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) // EAGAIN = pas de rep,  EWOULDBLOCK timeout
+        {
+            printf("Request timeout for icmp_seq=%u\n", seq);
+            return 0; // pas une erreur fatale
+        }
+        dprintf(2, "recvfrom: %s\n", strerror(errno));
+        return 0;
+    }
+    
+}
+
 int icmp(t_flags *flags, uint8_t *target_ip)
 {
     int socket_fd;
@@ -144,5 +165,6 @@ int icmp(t_flags *flags, uint8_t *target_ip)
     icmp_packet = build_packet(flags, seq, &packet_size);
     send_packet(flags, target_ip, socket_fd, icmp_packet, packet_size);
 
+    receive_reply(socket_fd, seq);
     return 1;
 }

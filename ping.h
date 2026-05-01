@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/ip.h> 
 
 #define DEFAULT_PAYLOAD_SIZE 56
 #define ICMP_HDR_SIZE        sizeof(struct icmphdr)
@@ -69,6 +70,20 @@ typedef struct s_flags
 //     in_port_t      sin_port;      // port (inutile pour ICMP)
 //     struct in_addr sin_addr;      // l'IP destination
 //     char           sin_zero[8];   // padding, à mettre à zéro
+// };
+
+// struct iphdr {
+//     unsigned int ihl:4;       // taille du header 4 octets
+//     unsigned int version:4;   // 4 pour IPv4
+//     uint8_t      tos;
+//     uint16_t     tot_len;
+//     uint16_t     id;
+//     uint16_t     frag_off;
+//     uint8_t      ttl;
+//     uint8_t      protocol;    // 1 = ICMP
+//     uint16_t     check;
+//     uint32_t     saddr;       // IP source
+//     uint32_t     daddr;       // IP destination
 // };
 
 int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
