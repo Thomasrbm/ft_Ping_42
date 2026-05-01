@@ -1,26 +1,10 @@
 #include "ping.h"
 
-
-int parsing(int ac, char **av)
-{
-    // tous les flags sont compatibles
-    if (ac < 2 || ac > 17)
-        return 0;
-
-
-
-
-
-    return 1;
-}
-
-
-
 int main(int ac, char **av)
 {
-    if (!parsing(ac, av))
+    int arg_offset;
+    t_flags flags;
+    if (!parsing(ac, av, &arg_offset, &flags))
         return 1;
-
-
     return 0;
 }

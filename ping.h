@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 
 // -V => prend le dessus en 2e 
 
@@ -37,3 +38,10 @@ typedef struct s_flags
 
 
 }   t_flags;
+
+
+int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
+
+
+
+int ft_strcmp(const char *s1, const char *s2);
