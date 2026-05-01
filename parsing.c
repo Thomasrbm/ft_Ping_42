@@ -49,7 +49,6 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags)
         return 0;
     }
     int i = 1;
-    *arg_offset = 0;
     while (i < ac && av[i][0] == '-')
     {
         if (!check_flags(av[i], flags))
@@ -58,13 +57,13 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags)
             printf("Usage: ./ft_ping [-?] for more details\n");
             return 0;
         }
-        (*arg_offset)++;
         i++;
     }
-    if (ac - i != 2)
+    if (ac - i != 1)
     {
         printf("Usage: ./ft_ping [-V] [-v] [-n] [-q] [-w] [-W] [-s] [-i] [-c] [-?] <target_ip / DNS>\n");
         return 0;
     }
+    *arg_offset = i;
     return 1;
 }
