@@ -1,18 +1,5 @@
+#include "ping.h"
 
-
-
-// -V => prend le dessus en 2e 
-
-// -v => tous activable en meme temps
-// -n 
-// -w 
-// -W 
-// -s
-// -i
-// -q
-// -c
-
-// '-?'   => prend le dessus sur tous  + entre quote sur zsh
 
 int parsing(int ac, char **av)
 {
