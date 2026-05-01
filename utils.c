@@ -1,6 +1,6 @@
 #include "ping.h"
 
-int ft_isnumber(const char *s)
+int ft_isnumber(char *s)
 {
     if (!s || !*s)
         return 0;
@@ -17,7 +17,7 @@ int ft_isnumber(const char *s)
     return 1;
 }
 
-int ft_strcmp(const char *s1, const char *s2)
+int ft_strcmp(char *s1, char *s2)
 {
 	size_t i;
 

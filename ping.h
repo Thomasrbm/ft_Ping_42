@@ -112,11 +112,11 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags);
 
 void handle_flags(t_flags *flags);
 
-int icmp(t_flags *flags, uint8_t *target_ip);
+int icmp(t_flags *flags, uint8_t *target_ip, char *hostname);
 int receive_reply(int sockfd, uint16_t seq);
 
 
-int ft_strcmp(const char *s1, const char *s2);
+int ft_strcmp(char *s1, char *s2);
 void *ft_memset(void *s, int c, size_t n);
 void *ft_memcpy(void *dst, const void *src, size_t n);
-int ft_isnumber(const char *s);
+int ft_isnumber(char *s);

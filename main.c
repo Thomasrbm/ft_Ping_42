@@ -33,6 +33,6 @@ int main(int ac, char **av)
     }
     if (!get_ip(av, &arg_offset, target_ip))
         return 1;
-    icmp(&flags, target_ip);
+    icmp(&flags, target_ip, av[arg_offset]);
     return 0;
 }

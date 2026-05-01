@@ -131,19 +131,54 @@ int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_pa
     return 0;
 }
 
-int icmp(t_flags *flags, uint8_t *target_ip)
-{
-    int socket_fd;
-    void *icmp_packet;
-    uint16_t seq = 1;
-    size_t packet_size = 0;
 
+void print_ping_prompt(uint8_t *target_ip, char *hostname, t_flags *flags)
+{
+    size_t   payload_size = flags->has_packetsize ? (size_t)flags->packetsize_value : DEFAULT_PAYLOAD_SIZE;
+
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, target_ip, ip_str, INET_ADDRSTRLEN);
+    printf("PING %s (%s) %zu(%zu) bytes of data.\n",
+        hostname, ip_str, payload_size, payload_size + ICMP_HDR_SIZE + 20);
+}
+
+
+int icmp(t_flags *flags, uint8_t *target_ip, char *hostname)
+{
+    int      socket_fd;
+    void    *icmp_packet;
+    uint16_t seq = 1;
+    size_t   packet_size = 0;
+
+    
     socket_fd = setup_socket(flags);
     if (socket_fd < 0)
         return 0;
-    icmp_packet = build_packet(flags, seq, &packet_size);
-    send_packet(flags, target_ip, socket_fd, icmp_packet, packet_size);
 
-    receive_reply(socket_fd, seq);
+    print_ping_prompt(target_ip, hostname, flags);
+
+    int interval = flags->has_interval ? flags->interval_value : 1; // -i
+    int remaining = flags->has_count ? flags->count_value : -1; // -c . -1 = infini
+
+    // boucle d envoit/reception : 1 paquet, attendre reponse, sleep, recommencer
+    while (remaining != 0)
+    {
+        icmp_packet = build_packet(flags, seq, &packet_size);
+        if (!icmp_packet)
+            break;
+        if (send_packet(flags, target_ip, socket_fd, icmp_packet, packet_size) == 0)
+            receive_reply(socket_fd, seq);
+        free(icmp_packet);
+
+        seq++;
+        if (remaining > 0) // si deja a -1 restera a -1 tout le temps
+            remaining--;
+        if (remaining == 0)
+            break;
+
+        sleep(interval);
+    }
+
+    close(socket_fd);
     return 1;
 }

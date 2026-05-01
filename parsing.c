@@ -6,7 +6,7 @@ static void print_usage(void)
                " [-s size] [-i sec] [-c count] [-?] <target_ip / DNS>\n");
 }
 
-static int parse_value_flag(int ac, char **av, int *i, int *flag_value, const char *name_of_flag)
+static int parse_value_flag(int ac, char **av, int *i, int *flag_value, char *name_of_flag)
 {
     if (*i + 1 >= ac)
     {
