@@ -1,8 +1,11 @@
 #include "ping.h"
 
 
-void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip)
+void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *flags)
 {
+    if (flags->has_quiet) // -q : on n affiche pas les replies (que stat de fin)
+        return;
+
     char src_ip_str[INET_ADDRSTRLEN]; // taille max ip v4
     inet_ntop(AF_INET, &from_ip->sin_addr, src_ip_str, INET_ADDRSTRLEN); // converit en string hexa l ip du replyer
 
@@ -89,7 +92,7 @@ int parse_reply(uint8_t *reply_buffer, ssize_t buffer_len, t_reply *reply_struc)
     return 1;
 }
 
-int receive_reply(int sockfd, uint16_t seq)
+int receive_reply(int sockfd, uint16_t seq, t_flags *flags)
 {
     uint8_t reply_buffer[1024];
     struct sockaddr_in from_ip;
@@ -102,7 +105,8 @@ int receive_reply(int sockfd, uint16_t seq)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK) // EAGAIN = pas de rep,  EWOULDBLOCK timeout
         {
-            printf("Request timeout for icmp_seq=%u\n", seq);
+            if (!flags->has_quiet) // -q : pas d affichage des timeouts non plus
+                printf("Request timeout for icmp_seq=%u\n", seq);
             return 0; // pas une erreur fatale
         }
         dprintf(2, "recvfrom: %s\n", strerror(errno));
@@ -114,6 +118,6 @@ int receive_reply(int sockfd, uint16_t seq)
     if (!validate_reply(&reply_struc, seq))
         return 0;
 
-    display_reply(&reply_struc, &from_ip);
+    display_reply(&reply_struc, &from_ip, flags);
     return 1;
 }

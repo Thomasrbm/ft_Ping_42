@@ -171,7 +171,7 @@ int icmp(t_flags *flags, uint8_t *target_ip, char *hostname)
         if (!icmp_packet)
             break;
         if (send_packet(flags, target_ip, socket_fd, icmp_packet, packet_size) == 0)
-            receive_reply(socket_fd, seq);
+            receive_reply(socket_fd, seq, flags);
         free(icmp_packet);
 
         seq++;
