@@ -8,17 +8,39 @@ void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *f
     char src_ip_str[INET_ADDRSTRLEN]; // taille max ip v4
     inet_ntop(AF_INET, &from_ip->sin_addr, src_ip_str, INET_ADDRSTRLEN); // converit en string hexa l ip du replyer
 
+    // -n si hostname le log du ping est un hostname aussi mais -n annule ca
+    char host_str[NI_MAXHOST]; // 1025 max taille nom hostname
+    int has_host = 0;
+    if (!flags->has_numeric)
+    {
+        // recupere le nom du dns avec l ip. si trouve pas ca met l ip.  verif strcmp qu il a bien trouver (sinon ==0 car compare ip avec ip)
+        if (getnameinfo((struct sockaddr *)from_ip, sizeof(*from_ip),
+                        host_str, sizeof(host_str), NULL, 0, 0) == 0
+            && ft_strcmp(host_str, src_ip_str) != 0)
+            has_host = 1;
+    }
+
     if (reply_struc->has_timestamp)
     {
-        printf("%zu bytes from %s: icmp_seq=%u ttl=%u time=%.3f ms\n",
-               reply_struc->icmp_size, src_ip_str,
-               reply_struc->seq, reply_struc->ttl, rtt_ms);
+        if (has_host)
+            printf("%zu bytes from %s (%s): icmp_seq=%u ttl=%u time=%.3f ms\n",
+                   reply_struc->icmp_size, host_str, src_ip_str,
+                   reply_struc->seq, reply_struc->ttl, rtt_ms);
+        else
+            printf("%zu bytes from %s: icmp_seq=%u ttl=%u time=%.3f ms\n",
+                   reply_struc->icmp_size, src_ip_str,
+                   reply_struc->seq, reply_struc->ttl, rtt_ms);
     }
     else
-     {
-        printf("%zu bytes from %s: icmp_seq=%u ttl=%u\n",
-               reply_struc->icmp_size, src_ip_str,
-               reply_struc->seq, reply_struc->ttl);
+    {
+        if (has_host)
+            printf("%zu bytes from %s (%s): icmp_seq=%u ttl=%u\n",
+                   reply_struc->icmp_size, host_str, src_ip_str,
+                   reply_struc->seq, reply_struc->ttl);
+        else
+            printf("%zu bytes from %s: icmp_seq=%u ttl=%u\n",
+                   reply_struc->icmp_size, src_ip_str,
+                   reply_struc->seq, reply_struc->ttl);
     }
 }
 
@@ -58,12 +80,28 @@ static const char *icmp_error_str(uint8_t type, uint8_t code)
 }
 
 // -v : afficher les erreurs ICMP recues, avc la bonne sequence de packet + code erreur
-void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc, uint16_t orig_seq)
+void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc, uint16_t orig_seq, t_flags *flags)
 {
     char src_ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &from_ip->sin_addr, src_ip_str, INET_ADDRSTRLEN);
-    printf("From %s icmp_seq=%u %s\n",
-        src_ip_str, orig_seq, icmp_error_str(reply_struc->type, reply_struc->code));
+
+    char host_str[NI_MAXHOST];
+    int has_host = 0;
+    if (!flags->has_numeric) // si pas de -n
+    {
+        // trouve le nom du dns avec l ip et si jamais l argument  alors on a mis google.com et pas 8.8.8.8
+        if (getnameinfo((struct sockaddr *)from_ip, sizeof(*from_ip),
+                        host_str, sizeof(host_str), NULL, 0, 0) == 0
+            && ft_strcmp(host_str, src_ip_str) != 0)
+            has_host = 1;
+    }
+
+    if (has_host) //  a stock le nom reel dans host str
+        printf("From %s (%s) icmp_seq=%u %s\n",
+            host_str, src_ip_str, orig_seq, icmp_error_str(reply_struc->type, reply_struc->code));
+    else
+        printf("From %s icmp_seq=%u %s\n",
+            src_ip_str, orig_seq, icmp_error_str(reply_struc->type, reply_struc->code));
 }
 
 void print_stats(t_stats *stats, char *hostname)

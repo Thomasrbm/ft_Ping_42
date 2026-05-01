@@ -8,6 +8,12 @@ int get_ip(char **av, int *arg_offset, uint8_t *target_ip, t_flags *flags)
     ft_memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     char *ip = av[*arg_offset];
+
+    // "active -n" si input en numerique directement (8.8.8.8)
+    struct in_addr tmp;
+    if (inet_pton(AF_INET, ip, &tmp) == 1)
+        flags->has_numeric = 1;
+
     if (getaddrinfo(ip, NULL, &hints, &res))
     {
         printf("invalid ip adress\n");

@@ -119,7 +119,7 @@ int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats)
              reply_struc.type == ICMP_PARAMETERPROB))
         {
             uint16_t orig_seq = parse_error_original_seq(reply_buffer, bytes_received);
-            print_verbose_error(&from_ip, &reply_struc, orig_seq);
+            print_verbose_error(&from_ip, &reply_struc, orig_seq, flags);
         }
         return 0;
     }
