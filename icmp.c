@@ -160,6 +160,10 @@ int icmp(t_flags *flags, uint8_t *target_ip, char *hostname)
     int interval = flags->has_interval ? flags->interval_value : 1; // -i
     int remaining = flags->has_count ? flags->count_value : -1; // -c . -1 = infini
 
+    // -w : deadline globale, heure du start
+    struct timeval start;
+    gettimeofday(&start, NULL);
+
     // boucle d envoit/reception : 1 paquet, attendre reponse, sleep, recommencer
     while (remaining != 0)
     {
@@ -175,6 +179,15 @@ int icmp(t_flags *flags, uint8_t *target_ip, char *hostname)
             remaining--;
         if (remaining == 0)
             break;
+
+        // -w : deadline passed , sort
+        if (flags->has_deadline)
+        {
+            struct timeval now;
+            gettimeofday(&now, NULL);
+            if ((now.tv_sec - start.tv_sec) >= flags->deadline_value)
+                break;
+        }
 
         sleep(interval);
     }
