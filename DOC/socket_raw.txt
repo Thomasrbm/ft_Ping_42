@@ -1,0 +1,55 @@
+
+
+------------------------- SOCK_STREAM (TCP) — le plus haut niveau
+
+
+
+
+socket(AF_INET, SOCK_STREAM, 0)
+
+
+kernel build tout pour toi.
+
+
+
+------------------------- SOCK_DGRAM (UDP) — niveau intermédiaire
+
+
+
+
+
+pas de garentie d acheminement
+
+
+
+
+
+------------------------- SOCK_RAW — bas niveau
+
+
+
+
+on construit notre header nous meme + kernel ajoute header ip (AF_INET)
+
+
+
+
+Besoin de ca pour icmp car tcp/udp etc (tcp surtout) utilise des port automatique
+et DGRAM et SOCK_STREAM sont concu pour ca
+
+(ip seul n as pas de port)
+
+
+hors icmp n utilise pas de port mais l id du programme
+
+
+
+
+
+
+
+
+------------------------- AF_PACKET + SOCK_RAW (encore plus bas) — couche 2
+
+
+On fait notr header ethernet nous meme (pour choisir la MAC nous meme)

@@ -1,0 +1,60 @@
+
+
+--------------------------- TCP ---------------------------
+
+le paquet arrive sur un routeur.
+
+
+le packet est destine a ton gateway et provient de google.
+
+
+102.37.254.254. (ip publique)
+
+
+
+Table NAT de la box
+
+
+IP publique : port public  →  IP privée : port privé
+82.65.123.45 : 54321       →  192.168.1.42 : 47823    (toi)
+82.65.123.45 : 54322       →  192.168.1.43 : 51000    (téléphone)
+82.65.123.45 : 54323       →  192.168.1.44 : 49500    (TV)
+
+
+le paquet est pour toi
+
+
+
+
+--------------------------- ICMP ---------------------------
+
+
+
+
+- Nous on build la packet chesum etc.
+
+- kernel ajoute un header ip.
+destination hors reseau local donc  default via 192.168.1.1 dev wlan0 
+default vers la boxe
+
+ip sous protocole : 1  icmp
+
+- arp pour trouver la box : 192.168.1.1 → aa:bb:cc:dd:ee:ff
+
+
+- kernel ajoute header ethernet et send vers la boxe
+
+- boxe fait du nat (traduit ip prive en : son ip publique + un port associe a ton pc)
+=> mais sur icmp pas de port donc ajoute l id a la place (pid du ping)
+
+
+- voyage : a chaque routeur ttl - 1 (si 0, time exceeded et retour)
+
+(a chaque routeur, arp local vers interface sortie puis repart (sans changer le paquet))
+
+- arrive a google, google voit protocole 1 dans ip.
+envoit a la couche icmp du kernel
+
+- voit echo request, ne lit pas le port, pas besoin ducoup
+
+- echo replys et tajet retour (garde juste le payload)

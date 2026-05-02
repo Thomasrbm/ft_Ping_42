@@ -1,7 +1,0 @@
-
-
-
-Couche 4 - Application : HTTP, SSH, DNS, FTP...
-Couche 3 - Transport   : TCP, UDP
-Couche 2 - Réseau      : IP, ICMP, ARP
-Couche 1 - Liaison     : Ethernet, Wifi

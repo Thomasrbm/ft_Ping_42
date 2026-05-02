@@ -1,0 +1,28 @@
+
+1/ traceroute
+
+Traceroute use icmp et use le ttl pour chopper les ip de
+tous les routeur entre toi et google par exemple
+
+
+
+
+envoyer des ttl trop petits au routeur pour qu il renvoit "time exceeded"
+avec leur ips.
+
+tu incremente de 1 pour chaque routteur en plus jusqu a google.
+
+
+
+
+
+
+
+2/ redirection de routage
+
+
+3/ necessite de fragmenter les paquetes 
+
+
+
+etc etc.

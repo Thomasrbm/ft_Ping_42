@@ -56,7 +56,6 @@ void *ft_memcpy(void *dst, const void *src, size_t n)
 	return (dst);
 }
 
-// le mdev =
 double ft_sqrt(double x)
 {
     if (x <= 0)

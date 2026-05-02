@@ -1,3 +1,55 @@
+
+--------- PK checksum ? 
+
+
+verifie si le trajet, tension cable, antenne etc 
+n ont pas corrumpue le paquet
+
+
+
+sinon RTT mauvais OU mauvaise seq
+
+
+
+
+
+
+--------- PK complement a 1
+
+
+
+a l envoie resultat different de 0
+
+le checksum ne stock que ~S au return
+
+
+
+
+MAIS a la reception
+a la reception :  il refait check sum sur S + ~S qui avait ete return a l envoit
+
+resultat toujours 0XFFFF si pas corruption DONC le return de la recpetion = 0
+
+
+
+--------- endian independant
+
+
+
+rend endian independant. lisible que soit sous big ou little endian
+
+
+x86       : sum = 0xAC68
+PowerPC   : sum = 0x68AC
+
+
+x86 voit [0x34][0x12] en RAM, lit 0x1234.
+PowerPC voit [0x12][0x34] en RAM, lit 0x1234. 
+
+les machines lise et ecrive odre oppose , askip ca s annule
+
+------------------------------------------------------
+
 [0x08][0x00]
   ^0    ^1      
 

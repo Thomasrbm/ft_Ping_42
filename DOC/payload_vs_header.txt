@@ -1,0 +1,13 @@
+
+
+header = partie des metas donnees qui servent au transport
+
+
+
+payload = contenu de ce qu on veut transmettre.
+Dans icmp = le timestamp pour calculer le RTT
+
+
+
+on peut y rajouter a peut pret ce qu on veut car il sera return tel
+quel.

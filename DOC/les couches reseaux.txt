@@ -1,0 +1,14 @@
+
+https://fr.wikipedia.org/wiki/Couche_r%C3%A9seau
+
+
+chaque couche a un role
+
+
+Couche 7 - Application : HTTP, SSH, DNS, FTP... ====> (traduction en action applicative, envoyer mail, GET cette page etc)
+Couche 6 - Presentation : unicode, xml, ascii, html ====> (traduit les donnees)
+Couche 5 - Session : socks, apple talks ====> (gere le dialogue *odre de paroles etc.)
+Couche 4 - Transport   : TCP, UDP ====> (transport avec garentie ou non)
+Couche 3 - Réseau      : IP, ICMP, ARP ====> (resolution, routing , diagnostique)
+Couche 2 - Liaison     : Ethernet, Wifi ====> (adresse localement)
+Couche 1 - Physique     : bluetooth,  E-carrier, fibre optique ====> (signal physique, transporte les bits)
