@@ -11,3 +11,12 @@ Dans icmp = le timestamp pour calculer le RTT
 
 on peut y rajouter a peut pret ce qu on veut car il sera return tel
 quel.
+
+
+-------- pk timestamp rtt dedans ? 
+
+ a la base icmp a ete pense pour verifier status pas le temps
+
+
+
+ donc ajout apres du timestamp dans le payload 

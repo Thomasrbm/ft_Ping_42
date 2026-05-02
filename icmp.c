@@ -9,32 +9,32 @@ int icmp(t_flags *flags, uint8_t *target_ip, char *hostname, int socket_fd)
 
     print_ping_prompt(target_ip, hostname, flags);
 
-    int interval = flags->has_interval ? flags->interval_value : 1; // -i
-    int remaining = flags->has_count ? flags->count_value : -1; // -c . -1 = infini
+    int interval_flag_i = flags->has_interval ? flags->interval_value : 1; // -i
+    long remaining_flag_c = flags->has_count ? flags->count_value : -1; // -c . -1 = infini
 
     // stats / -w : init a 0 start
-    t_stats stats;
+    t_stats stats;  // stats = le prompt resume de fin
     ft_memset(&stats, 0, sizeof(stats));
     gettimeofday(&stats.start_time, NULL);
 
     // boucle d envoit/reception : 1 paquet, attendre reponse, sleep, recommencer
-    while (remaining != 0)
+    while (remaining_flag_c != 0)
     {
         icmp_packet = build_packet(flags, seq, &packet_size);
         if (!icmp_packet)
             break;
-        if (send_packet(flags, target_ip, socket_fd, icmp_packet, packet_size) == 0)
+        if (send_packet(target_ip, socket_fd, icmp_packet, packet_size) == 0)
         {
             stats.transmitted++;
             // va maj stat et parser la reply.
-            receive_reply(socket_fd, seq, flags, &stats);
+            receive_reply(socket_fd, seq, flags, &stats); // pas full safe meme si dans condi car si sort timout de ping 1. revient envoit ping2 et la recoit pinng 1 (donc seq)
         }
         free(icmp_packet);
 
         seq++;
-        if (remaining > 0) // si deja a -1 restera a -1 tout le temps
-            remaining--;
-        if (remaining == 0)
+        if (remaining_flag_c > 0) // si deja a -1 restera a -1 tout le temps
+            remaining_flag_c--;
+        if (remaining_flag_c == 0)
             break;
 
         // -w : deadline passed , sort
@@ -46,7 +46,7 @@ int icmp(t_flags *flags, uint8_t *target_ip, char *hostname, int socket_fd)
                 break;
         }
 
-        sleep(interval);
+        sleep(interval_flag_i);
     }
 
     print_stats(&stats, hostname);

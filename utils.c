@@ -1,4 +1,40 @@
 #include "ping.h"
+#include <limits.h>
+
+// errno Erange (errno sorte de global implicite)
+long ft_strtol(const char *s, char **endptr)
+{
+    long result = 0;
+    int  sign = 1;
+
+    while (*s == ' ' || *s == '\t')
+        s++;
+    if (*s == '+')
+        s++;
+    else if (*s == '-')
+    {
+        sign = -1;
+        s++;
+    }
+    while (*s >= '0' && *s <= '9')
+    {
+        int digit = *s - '0';
+        if (result > (LONG_MAX - digit) / 10)
+        {
+            errno = ERANGE;
+            while (*s >= '0' && *s <= '9')
+                s++;
+            if (endptr)
+                *endptr = (char *)s;
+            return (sign == 1) ? LONG_MAX : LONG_MIN;
+        }
+        result = result * 10 + digit;
+        s++;
+    }
+    if (endptr)
+        *endptr = (char *)s;
+    return result * sign;
+}
 
 int ft_isnumber(char *s)
 {
@@ -56,12 +92,19 @@ void *ft_memcpy(void *dst, const void *src, size_t n)
 	return (dst);
 }
 
+// méthode de Héron
+// x = 9, s = 9 (estimation initiale)
+// itér 1 : s = (9 + 9/9) / 2     = 5
+// itér 2 : s = (5 + 9/5) / 2     = 3.4
+// itér 3 : s = (3.4 + 9/3.4) / 2 ≈ 3.0235
+// itér 4 : s ≈ 3.00009
+// itér 5 : s ≈ 3.0000000001
 double ft_sqrt(double x)
 {
     if (x <= 0)
         return 0;
     double s = x;
     for (int i = 0; i < 20; i++)
-        s = 0.5 * (s + x / s);
+        s = 0.5 * (s + x / s); // x0.5 = div par 2
     return s;
 }

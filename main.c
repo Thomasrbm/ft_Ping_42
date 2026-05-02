@@ -2,24 +2,25 @@
 
 int get_ip(char **av, int *arg_offset, uint8_t *target_ip, t_flags *flags)
 {
-    struct addrinfo hints;
+    struct addrinfo hints; // filtre ipv4
     struct addrinfo *res;
 
     ft_memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     char *ip = av[*arg_offset];
 
-    // "active -n" si input en numerique directement (8.8.8.8)
+    // "active -n" si input en numerique (8.8.8.8), le printera tel quel
     struct in_addr tmp;
-    if (inet_pton(AF_INET, ip, &tmp) == 1)
+    if (inet_pton(AF_INET, ip, &tmp) == 1) // string to ip decimal (si lettre etc marche pas)
         flags->has_numeric = 1;
 
-    if (getaddrinfo(ip, NULL, &hints, &res))
+    if (getaddrinfo(ip, NULL, &hints, &res)) // autant decimal que dns
     {
         printf("invalid ip adress\n");
         return 0;
     }
     ft_memcpy(target_ip, &((struct sockaddr_in *)res->ai_addr)->sin_addr, 4);  // de base ai_addr est sockaddr  generique: ip v4 cast avec sockaddr_in
+    
     // -v : afficher les infos de resolution
     if (flags->has_verbose)
         printf("ping: ai->ai_family: AF_INET, ai->ai_canonname: '%s'\n", ip);

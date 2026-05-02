@@ -6,21 +6,32 @@ static void print_usage(void)
                " [-s size] [-i sec] [-c count] [-?] <target_ip / DNS>\n");
 }
 
-static int parse_value_flag(int ac, char **av, int *i, int *flag_value, char *name_of_flag)
+static int parse_long_flag_value(int ac, char **av, int *i, long *flag_value, char *name_of_flag, long max)
 {
-    if (*i + 1 >= ac)
+    if (*i + 1 >= ac) // pas de val
     {
         dprintf(2, "ft_ping: option '%s' requires an argument\n", name_of_flag);
         print_usage();
         return 0;
     }
-    if (!ft_isnumber(av[*i + 1]))
+    if (!ft_isnumber(av[*i + 1])) // val pas nombre
     {
         dprintf(2, "ft_ping: invalid argument: '%s' for option '%s'"
                    " (positive integer required)\n", av[*i + 1], name_of_flag);
         return 0;
     }
-    int v = atoi(av[*i + 1]);
+    errno = 0;
+    long v = ft_strtol(av[*i + 1], NULL); // to long
+    if (errno == ERANGE || v > max)
+    {
+        if (ft_strcmp(name_of_flag, "-W") == 0)
+            dprintf(2, "ft_ping: bad linger time: %s\n", av[*i + 1]);
+        else if (ft_strcmp(name_of_flag, "-i") == 0)
+            dprintf(2, "ft_ping: bad timing interval: %s\n", av[*i + 1]);
+        else
+            dprintf(2, "ft_ping: invalid argument: '%s': Numerical result out of range\n", av[*i + 1]);
+        return 0;
+    }
     if (v <= 0)
     {
         dprintf(2, "ft_ping: invalid argument: '%s' for option '%s'"
@@ -29,6 +40,16 @@ static int parse_value_flag(int ac, char **av, int *i, int *flag_value, char *na
     }
     *flag_value = v;
     *i += 1;
+    return 1;
+}
+
+// wrapper int : pour les flags stockes en int dans t_flags (le cast est safe car max <= INT_MAX)
+static int parse_value_flag_int_wrapper(int ac, char **av, int *i, int *flag_value, char *name_of_flag, long max)
+{
+    long v = 0;
+    if (!parse_long_flag_value(ac, av, i, &v, name_of_flag, max))
+        return 0;
+    *flag_value = (int)v;
     return 1;
 }
 
@@ -45,31 +66,31 @@ static int check_flags(int ac, char **av, int *i, t_flags *flags)
         flags->has_quiet = 1;
     else if (ft_strcmp(av[*i], "-w") == 0)
     {
-        if (!parse_value_flag(ac, av, i, &flags->deadline_value, "-w"))
+        if (!parse_value_flag_int_wrapper(ac, av, i, &flags->deadline_value, "-w", MAX_DEADLINE))
             return -1;
         flags->has_deadline = 1;
     }
     else if (ft_strcmp(av[*i], "-W") == 0)
     {
-        if (!parse_value_flag(ac, av, i, &flags->timeout_value, "-W"))
+        if (!parse_value_flag_int_wrapper(ac, av, i, &flags->timeout_value, "-W", MAX_TIMEOUT))
             return -1;
         flags->has_timeout = 1;
     }
     else if (ft_strcmp(av[*i], "-s") == 0)
     {
-        if (!parse_value_flag(ac, av, i, &flags->packetsize_value, "-s"))
+        if (!parse_value_flag_int_wrapper(ac, av, i, &flags->packetsize_value, "-s", MAX_PACKET_SIZE))
             return -1;
         flags->has_packetsize = 1;
     }
     else if (ft_strcmp(av[*i], "-i") == 0)
     {
-        if (!parse_value_flag(ac, av, i, &flags->interval_value, "-i"))
+        if (!parse_value_flag_int_wrapper(ac, av, i, &flags->interval_value, "-i", MAX_INTERVAL))
             return -1;
         flags->has_interval = 1;
     }
-    else if (ft_strcmp(av[*i], "-c") == 0)
+    else if (ft_strcmp(av[*i], "-c") == 0) // ne passe pas par le wrapper int
     {
-        if (!parse_value_flag(ac, av, i, &flags->count_value, "-c"))
+        if (!parse_long_flag_value(ac, av, i, &flags->count_value, "-c", MAX_COUNT))
             return -1;
         flags->has_count = 1;
     }
@@ -107,18 +128,18 @@ int parsing(int ac, char **av, int *arg_offset, t_flags *flags)
     int i = 1;
     while (i < ac && av[i][0] == '-')
     {
-        int rc = check_flags(ac, av, &i, flags);
-        if (rc == 0)
+        int ret = check_flags(ac, av, &i, flags);
+        if (ret == 0)
         {
             dprintf(2, "ft_ping: invalid option: '%s'\n", av[i]);
             print_usage();
             return 0;
         }
-        if (rc == -1)
+        if (ret == -1) // bon flag mais mauvaise value pour -c -w etc. (autre msg gere avant)
             return 0;
         i++;
     }
-    if (!flags->has_help && !flags->has_version && ac - i != 1)
+    if (!flags->has_help && !flags->has_version && ac - i != 1) // seul -v et -? accepte de pas avoir d ip ou trop de param
     {
         dprintf(2, "ft_ping: usage error: Destination address required\n");
         print_usage();

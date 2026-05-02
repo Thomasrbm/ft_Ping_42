@@ -15,6 +15,13 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
+#include <limits.h>
+
+#define MAX_PACKET_SIZE 65507    // -s : 65535 - 20 (IP hdr) - 8 (ICMP hdr)
+#define MAX_DEADLINE    INT_MAX  // -w
+#define MAX_TIMEOUT     4294     // -W : UINT_MAX / 1000000 (cap iputils en us)
+#define MAX_INTERVAL    2147483  // -i : INT_MAX / 1000 (cap iputils en ms)
+#define MAX_COUNT       LONG_MAX // -c
 
 #define DEFAULT_PAYLOAD_SIZE 56
 #define ICMP_HDR_SIZE        sizeof(struct icmphdr)
@@ -30,11 +37,11 @@ typedef struct s_flags
     int     has_verbose;    // -v 
     int     has_numeric;    // -n
     int     has_quiet;      // -q
-    int     has_deadline;   // -w
-    int     has_timeout;    // -W
-    int     has_packetsize; // -s
-    int     has_interval;   // -i
-    int     has_count;      // -c
+    int     has_deadline;   // -w   max 2147483647 = INT MAX
+    int     has_timeout;    // -W   max 4294 = UINT_MAX / 1000000 (cap iputils en us)
+    int     has_packetsize; // -s   max 65507 =   65535 - 20 (IP hdr) - 8 (ICMP hdr)
+    int     has_interval;   // -i   max 2147483 = INT_MAX / 1000 (cap iputils en ms)
+    int     has_count;      // -c   max 9223372036854775807  =  LONG_MAX
 
     int     has_help;       // -?
 
@@ -42,7 +49,7 @@ typedef struct s_flags
     int     timeout_value;        // -W : valeur du timeout par reply
     int     packetsize_value;     // -s : taille du payload en octets
     int     interval_value;       // -i : intervalle (en sec)
-    int     count_value;          // -c : nombre de paquets a send
+    long    count_value;          // -c : nombre de paquets a send
 
 
 }   t_flags;
@@ -134,7 +141,7 @@ void print_stats(t_stats *stats, char *hostname);
 int setup_socket(t_flags *flags);
 unsigned short compute_checksum(void *data, int len);
 uint8_t *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size);
-int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size);
+int send_packet(uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size);
 void print_ping_prompt(uint8_t *target_ip, char *hostname, t_flags *flags);
 void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc, uint16_t orig_seq, t_flags *flags);
 void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *flags, double rtt_ms);
@@ -143,4 +150,5 @@ int ft_strcmp(char *s1, char *s2);
 void *ft_memset(void *s, int c, size_t n);
 void *ft_memcpy(void *dst, const void *src, size_t n);
 int ft_isnumber(char *s);
+long ft_strtol(const char *s, char **endptr);
 double ft_sqrt(double x);

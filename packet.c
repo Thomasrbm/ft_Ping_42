@@ -6,7 +6,7 @@
 
 // d habitude en sock_stream  le kernel le fait pour nous
 // en raw le kernell fait que le header ip
-unsigned short compute_checksum(void *data, int len)
+unsigned short checksum(void *data, int len)
 {
     unsigned short *buf = data;
     unsigned int    sum = 0;
@@ -47,7 +47,7 @@ uint8_t       *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size)
     total_size = ICMP_HDR_SIZE + payload_size;
 
     uint8_t *packet;
-    packet = calloc(1, total_size);
+    packet = calloc(1, total_size); // 1 x total size, met tout a 0
     if (!packet)
         return NULL;
 
@@ -70,17 +70,16 @@ uint8_t       *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size)
         gettimeofday(send_time, NULL); // y stock moment ou packet fait
     }
 
-    icmp_header->checksum = compute_checksum(packet, total_size);
+    icmp_header->checksum = checksum(packet, total_size);
     *packet_size = total_size;
     return packet;
 }
 
-int send_packet(t_flags *flags, uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size)
+int send_packet(uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size)
 {
-    struct sockaddr_in dest;
+    struct sockaddr_in dest; // vers qui, quel ip, quel port ?(aucun) on envoit
 
-    (void)flags;
-    ft_memset(&dest, 0, sizeof(dest));      // sin_zero à 0
+    ft_memset(&dest, 0, sizeof(dest));      // sin_zero à 0 (padding de la struct)
     dest.sin_family = AF_INET;              //  IPv4
     dest.sin_port = 0;                       // icmp use pas port
     ft_memcpy(&dest.sin_addr, target_ip, 4); // copie ip cible
