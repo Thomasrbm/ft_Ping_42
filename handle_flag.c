@@ -3,8 +3,12 @@
 void version_flag(void)
 {
     printf("ft_ping v1.0\n");
-    printf("the program copies : ping from iputils 20250605\n");
-    printf("tries to have same (not really) libcap: yes, IDN: yes, NLS: yes, error.h: yes, getrandom(): yes, __fpending(): yes\n");
+    printf("the program copies : ping from (GNU inetutils) 2.0\n");
+    printf("Copyright (C) 2019 Free Software Foundation, Inc.\n");
+    printf("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n");
+    printf("This is free software: you are free to change and redistribute it.\n");
+    printf("There is NO WARRANTY, to the extent permitted by law.\n\n");
+    printf("Written by several authors.\n");
 }
 
 void help_flag(void)
@@ -13,9 +17,9 @@ void help_flag(void)
     printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
     printf(" Options controlling ICMP request types:\n");
     printf("  -c NUMBER          stop after sending NUMBER packets\n");
-    printf("  -i NUMBER          wait NUMBER seconds between sending each packet\n");
-    printf("  -n                 do not resolve host addresses\n");
     printf("  -q                 quiet output\n");
+    printf("  -r                 send directly to a host on an attached network\n");
+    printf("      --ttl=N        specify N as time-to-live\n");
     printf("  -s NUMBER          send NUMBER data octets\n");
     printf("  -v                 verbose output\n");
     printf("  -w NUMBER          stop after NUMBER seconds\n");

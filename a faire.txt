@@ -1,0 +1,38 @@
+-c 0
+-c val negative
+
+
+
+- verif output chaque flags
+
+
+- re test les scriptes
+
+
+
+- relire 2 fois
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------
+
+
+
+# si diff ttl
+sudo tcpdump -ni any 'icmp and host 8.8.8.8' -v    
+
+
+
+-r  no route, peut faire que du local. (safety test sans router ailleurs)

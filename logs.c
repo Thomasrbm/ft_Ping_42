@@ -8,40 +8,14 @@ void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *f
     char src_ip_str[INET_ADDRSTRLEN]; // taille max ip v4
     inet_ntop(AF_INET, &from_ip->sin_addr, src_ip_str, INET_ADDRSTRLEN); // converit en string hexa l ip du replyer
 
-    // -n si hostname le log du ping est un hostname aussi mais -n annule ca
-    char host_str[NI_MAXHOST]; // 1025 max taille nom hostname
-    int has_host = 0;
-    if (!flags->has_numeric)
-    {
-        // recupere le nom du dns avec l ip. si trouve pas ca met l ip.  verif strcmp qu il a bien trouver (sinon ==0 car compare ip avec ip)
-        if (getnameinfo((struct sockaddr *)from_ip, sizeof(*from_ip),
-                        host_str, sizeof(host_str), NULL, 0, 0) == 0
-            && ft_strcmp(host_str, src_ip_str) != 0)
-            has_host = 1;
-    }
-
     if (reply_struc->has_timestamp)
-    {
-        if (has_host)
-            printf("%zu bytes from %s (%s): icmp_seq=%u ttl=%u time=%.3f ms\n",
-                   reply_struc->icmp_size, host_str, src_ip_str,
-                   reply_struc->seq, reply_struc->ttl, rtt_ms);
-        else
-            printf("%zu bytes from %s: icmp_seq=%u ttl=%u time=%.3f ms\n",
-                   reply_struc->icmp_size, src_ip_str,
-                   reply_struc->seq, reply_struc->ttl, rtt_ms);
-    }
+        printf("%zu bytes from %s: icmp_seq=%u ttl=%u time=%.3f ms\n",
+               reply_struc->icmp_size, src_ip_str,
+               reply_struc->seq, reply_struc->ttl, rtt_ms);
     else
-    {
-        if (has_host)
-            printf("%zu bytes from %s (%s): icmp_seq=%u ttl=%u\n",
-                   reply_struc->icmp_size, host_str, src_ip_str,
-                   reply_struc->seq, reply_struc->ttl);
-        else
-            printf("%zu bytes from %s: icmp_seq=%u ttl=%u\n",
-                   reply_struc->icmp_size, src_ip_str,
-                   reply_struc->seq, reply_struc->ttl);
-    }
+        printf("%zu bytes from %s: icmp_seq=%u ttl=%u\n",
+               reply_struc->icmp_size, src_ip_str,
+               reply_struc->seq, reply_struc->ttl);
 }
 
 void print_ping_prompt(uint8_t *target_ip, char *hostname, t_flags *flags)
@@ -50,12 +24,19 @@ void print_ping_prompt(uint8_t *target_ip, char *hostname, t_flags *flags)
 
     char ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, target_ip, ip_str, INET_ADDRSTRLEN);
-    printf("PING %s (%s) %zu(%zu) bytes of data.\n",
-        hostname, ip_str, payload_size, payload_size + ICMP_HDR_SIZE + 20);
+    if (flags->has_verbose)
+    {
+        uint16_t id = getpid() & 0xFFFF;
+        printf("PING %s (%s): %zu data bytes, id 0x%04x = %u\n",
+            hostname, ip_str, payload_size, id, id);
+    }
+    else
+        printf("PING %s (%s): %zu data bytes\n",
+            hostname, ip_str, payload_size);
 }
 
 // selon code, le bon msg
-static const char *icmp_error_str(uint8_t type, uint8_t code)
+char *icmp_error_str(uint8_t type, uint8_t code)
 {
     if (type == ICMP_DEST_UNREACH)
     {
@@ -79,58 +60,36 @@ static const char *icmp_error_str(uint8_t type, uint8_t code)
     return "Unknown ICMP";
 }
 
-// -v : afficher les erreurs ICMP recues, avc la bonne sequence de packet + code erreur
-void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc, uint16_t orig_seq, t_flags *flags)
+// -v : format inetutils-2.0  =>  "N bytes from IP: <error>"
+void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc)
 {
     char src_ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &from_ip->sin_addr, src_ip_str, INET_ADDRSTRLEN);
 
-    char host_str[NI_MAXHOST];
-    int has_host = 0;
-    if (!flags->has_numeric) // si pas de -n
-    {
-        // trouve le nom du dns avec l ip et si jamais l argument  alors on a mis google.com et pas 8.8.8.8
-        if (getnameinfo((struct sockaddr *)from_ip, sizeof(*from_ip),
-                        host_str, sizeof(host_str), NULL, 0, 0) == 0
-            && ft_strcmp(host_str, src_ip_str) != 0)
-            has_host = 1;
-    }
-
-    if (has_host) //  a stock le nom reel dans host str
-        printf("From %s (%s) icmp_seq=%u %s\n",
-            host_str, src_ip_str, orig_seq, icmp_error_str(reply_struc->type, reply_struc->code));
-    else
-        printf("From %s icmp_seq=%u %s\n",
-            src_ip_str, orig_seq, icmp_error_str(reply_struc->type, reply_struc->code));
+    printf("%zu bytes from %s: %s\n",
+        reply_struc->icmp_size, src_ip_str,
+        icmp_error_str(reply_struc->type, reply_struc->code));
 }
 
 void print_stats(t_stats *stats, char *hostname)
 {
-    struct timeval end;
-    gettimeofday(&end, NULL);
-    long elapsed_ms = (end.tv_sec - stats->start_time.tv_sec) * 1000L
-                    + (end.tv_usec - stats->start_time.tv_usec) / 1000L;
-
     int loss = 0;
     // produit en crois par rapport au transmitted  pour avoir le ratio de perdues en pourcentage
     if (stats->transmitted > 0)
         loss = (stats->transmitted - stats->received) * 100 / stats->transmitted;
 
     printf("--- %s ping statistics ---\n", hostname);
-    printf("%d packets transmitted, %d received, %d%% packet loss, time %ldms\n",
-           stats->transmitted, stats->received, loss, elapsed_ms);
+    printf("%d packets transmitted, %d packets received, %d%% packet loss\n",
+           stats->transmitted, stats->received, loss);
 
     if (stats->rtt_count > 0)
     {
-        // moyenne
         double avg = stats->rtt_sum / stats->rtt_count;
-        // mdev = ecart-type des RTT : sqrt(moyenne(x^2) - moyenne(x)^2) = la valeur typique des ecarts (standar deviation)
-        // donc racine carre de la variance qui elle est valeur qui indique l etallement des valeur par rapport a la moyenne
         double variance = stats->rtt_sum_sq / stats->rtt_count - avg * avg;
         if (variance < 0)
             variance = 0;
-        double mdev = ft_sqrt(variance);
-        printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
-               stats->rtt_min, avg, stats->rtt_max, mdev);
+        double stddev = ft_sqrt(variance);
+        printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
+               stats->rtt_min, avg, stats->rtt_max, stddev);
     }
 }

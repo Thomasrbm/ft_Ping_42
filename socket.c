@@ -16,24 +16,34 @@ int setup_socket(t_flags *flags)
         return -1;  
     }
 
-    int ttl = 64; // valeur flag pour  time to leave
     // ttl = compteur de 64 essai maximum dans un boucle de routeur (si + = routeur mal config)
     // donc on leave car boucle infini surement (routeur a pour google va voir b, b voir c c voir a etc)
+    int ttl = flags->has_ttl ? flags->ttl_value : DEFAULT_TTL;
     if (setsockopt(socket_fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) // option socket layer ip (3) : set la ttl
     {
         // IPPROTO_IP layer ip
         dprintf(2, "socket: %s\n", strerror(errno));
         return -1;
     }
-    // option a l envoie 
+    // option a l envoie
 
+    // -r : SO_DONTROUTE => bypass de la table de routage, le packet ne sort que si la dest est sur un reseau directement attache
+    if (flags->has_ignore_routing)
+    {
+        int one = 1;
+        if (setsockopt(socket_fd, SOL_SOCKET, SO_DONTROUTE, &one, sizeof(one)) < 0)
+        {
+            dprintf(2, "socket: %s\n", strerror(errno));
+            return -1;
+        }
+    }
 
     // flag -W timeout value.
     // si pas le -W met valeur a 1 sec
     struct timeval tv;
     tv.tv_sec = flags->has_timeout ? flags->timeout_value : 1;
     tv.tv_usec = 0;
-    if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) // option socket global  SO_RCVTIMEO flag qui dit on touche au timeout. 
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) // option socket global  SO_RCVTIMEO flag qui dit on touche au timeout.
     {
         dprintf(2, "socket: %s\n", strerror(errno));
         return -1;
@@ -41,8 +51,5 @@ int setup_socket(t_flags *flags)
     // option au receive pour les recv ft etc. pour pouvoir timeout si les ping reviennent pas.
     // si ping 1 bug et 2 revient avant lui le seq prevent ca.
 
-    // -v : afficher les infos de socket
-    if (flags->has_verbose)
-        printf("ping: sock4.fd: %d (socktype: SOCK_RAW), sock6.fd: -1 (socktype: 0), hints.ai_family: AF_UNSPEC\n", socket_fd);
     return socket_fd;
 }

@@ -9,8 +9,8 @@
 #         ./test.sh errors    -> tests des cas d'erreur
 # ============================================================
 
-# Le script est dans DOC/ -> on se place a la racine du projet
-cd "$(dirname "$0")/.." || exit 1
+# on se place a la racine du projet (la ou est le script)
+cd "$(dirname "$0")" || exit 1
 
 BIN=./ft_ping
 REAL=$(command -v ping || echo /run/wrappers/bin/ping)
@@ -110,8 +110,7 @@ test_flags() {
     run_test_fail "-c negatif"            "$BIN -c -5 google.com"
     run_test_fail "-s overflow"           "$BIN -s 99999 google.com"
     run_test_fail "-w overflow"           "$BIN -w 99999999999 google.com"
-    run_test_fail "-i overflow"           "$BIN -i 99999999 google.com"
-    run_test_fail "-W overflow"           "$BIN -W 999999 google.com"
+    run_test_fail "-W overflow"           "$BIN -W 99999999999 google.com"
     run_test_fail "host invalide"         "$BIN nimportequoi.invalide.tld"
     run_test_fail "host vide"             "$BIN ''"
 }
@@ -127,7 +126,7 @@ test_basic() {
     run_test "ping -n -c 2"               "$BIN -n -c 2 8.8.8.8"
     run_test "ping -q -c 3"               "$BIN -q -c 3 127.0.0.1"
     run_test "ping -v -c 2"               "$BIN -v -c 2 127.0.0.1"
-    run_test_fail "ping -s 0 (rejette)"   "$BIN -s 0 -c 2 127.0.0.1"
+    run_test "ping -s 0 (autorise)"       "$BIN -s 0 -c 2 127.0.0.1"
     run_test "ping -s 100 -c 2"           "$BIN -s 100 -c 2 127.0.0.1"
     run_test "ping -s 65507 -c 1"         "$BIN -s 65507 -c 1 127.0.0.1"
     run_test_fail "ping -i 0 (rejette)"   "$BIN -i 0 -c 3 127.0.0.1"
@@ -184,17 +183,65 @@ test_valgrind() {
 
     # NOTE: pour les tests d'erreur, on enrobe avec "rc=$?; [ $rc -ne 42 ]"
     # -> on tolere n'importe quel exit sauf 42 (qui est le code reserve aux leaks valgrind)
+
+    # --- meta / parsing pur (pas de socket, pas de reseau) ---
     run_test "valgrind no arg"            "$PREFIX $VG $BIN; rc=\$?; [ \$rc -ne 42 ]"
     run_test "valgrind -?"                "$PREFIX $VG $BIN '-?'; rc=\$?; [ \$rc -ne 42 ]"
     run_test "valgrind -V"                "$PREFIX $VG $BIN -V; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind flag inconnu"      "$PREFIX $VG $BIN -Z 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
     run_test "valgrind host invalide"     "$PREFIX $VG $BIN nope.invalide.tld; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind host vide"         "$PREFIX $VG $BIN ''; rc=\$?; [ \$rc -ne 42 ]"
+
+    # --- -c (count) ---
     run_test "valgrind -c 2 localhost"    "$PREFIX $VG $BIN -c 2 127.0.0.1"
     run_test "valgrind -c 3 google"       "$PREFIX $VG $BIN -c 3 google.com"
+    run_test "valgrind -c sans val"       "$PREFIX $VG $BIN -c; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind -c abc"            "$PREFIX $VG $BIN -c abc 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind -c 0"              "$PREFIX $VG $BIN -c 0 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind -c -5"             "$PREFIX $VG $BIN -c -5 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+
+    # --- -s (packet size) ---
+    run_test "valgrind -s 0 (autorise)"   "$PREFIX $VG $BIN -s 0 -c 2 127.0.0.1"
+    run_test "valgrind -s 56 -c 2"        "$PREFIX $VG $BIN -s 56 -c 2 127.0.0.1"
+    run_test "valgrind -s 1472 -c 2"      "$PREFIX $VG $BIN -s 1472 -c 2 127.0.0.1"
     run_test "valgrind -s 65507 -c 1"     "$PREFIX $VG $BIN -s 65507 -c 1 127.0.0.1"
-    run_test "valgrind -s 0 (erreur)"     "$PREFIX $VG $BIN -s 0 -c 2 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind -s overflow"       "$PREFIX $VG $BIN -s 99999 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+
+    # NOTE: tout test impliquant une attente reelle (-w, -W sur ip morte,
+    # -i > 0, -i/-w/-W overflow) est skip -> sous valgrind, meme une attente
+    # de 1-2 sec devient des dizaines de sec et rend la suite interminable.
+    # On garde uniquement : parsing errors (rejet immediat) + runs comptes (-c)
+    # qui finissent sous la seconde sur localhost.
+
+    # --- -i (interval) : seul le rejet immediat ---
+    run_test "valgrind -i 0 (erreur)"     "$PREFIX $VG $BIN -i 0 -c 3 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+
+    # --- -w (deadline) : pas de run, juste parsing ---
+    # (overflow skip aussi -> ft_strtol/cmp peut prendre du temps selon la val)
+
+    # --- -W (timeout par reply) : tout skip, c'est par definition une attente ---
+
+    # --- -r (SO_DONTROUTE) : run rapide localhost uniquement ---
+    run_test "valgrind -r local -c 2"     "$PREFIX $VG $BIN -r -c 2 127.0.0.1"
+
+    # --- --ttl : runs cours + tous les rejets immediats ---
+    run_test "valgrind --ttl=64 -c 2"     "$PREFIX $VG $BIN --ttl=64 -c 2 127.0.0.1"
+    run_test "valgrind --ttl=255 -c 2"    "$PREFIX $VG $BIN --ttl=255 -c 2 127.0.0.1"
+    run_test "valgrind --ttl=0 (small)"   "$PREFIX $VG $BIN --ttl=0 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind --ttl=300 (big)"   "$PREFIX $VG $BIN --ttl=300 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind --ttl=-1 (big)"    "$PREFIX $VG $BIN --ttl=-1 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind --ttl=abc"         "$PREFIX $VG $BIN --ttl=abc 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind --ttl sans val"    "$PREFIX $VG $BIN --ttl; rc=\$?; [ \$rc -ne 42 ]"
+
+    # --- -v / -n / -q ---
     run_test "valgrind -v -n -q -c 2"     "$PREFIX $VG $BIN -v -n -q -c 2 127.0.0.1"
-    run_test "valgrind -w 2"              "$PREFIX $VG $BIN -w 2 127.0.0.1"
-    run_test "valgrind flag invalide"     "$PREFIX $VG $BIN -Z 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind -v -c 2 google"    "$PREFIX $VG $BIN -v -c 2 google.com"
+    run_test "valgrind -q -c 3 local"     "$PREFIX $VG $BIN -q -c 3 127.0.0.1"
+
+    # --- combos de flags (sans -i / -w / -W pour eviter les attentes) ---
+    run_test "valgrind combo full"        "$PREFIX $VG $BIN -v -c 2 -s 128 --ttl=64 127.0.0.1"
+    run_test "valgrind combo r+ttl"       "$PREFIX $VG $BIN -r --ttl=32 -c 2 127.0.0.1"
+    run_test "valgrind combo q+s"         "$PREFIX $VG $BIN -q -s 200 -c 2 127.0.0.1"
 }
 
 # ------------------------------------------------------------

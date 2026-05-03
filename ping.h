@@ -16,12 +16,17 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <limits.h>
+#include <locale.h>
+#include <sys/types.h>
 
-#define MAX_PACKET_SIZE 65507    // -s : 65535 - 20 (IP hdr) - 8 (ICMP hdr)
+#define MAX_PACKET_SIZE 65399    // -s : IP_MAXPACKET (65535) - MAXIPLEN (60) - MAXICMPLEN (76)
 #define MAX_DEADLINE    INT_MAX  // -w
-#define MAX_TIMEOUT     4294     // -W : UINT_MAX / 1000000 (cap iputils en us)
-#define MAX_INTERVAL    2147483  // -i : INT_MAX / 1000 (cap iputils en ms)
+#define MAX_TIMEOUT     INT_MAX  // -W
 #define MAX_COUNT       LONG_MAX // -c
+#define MAX_TTL         255      // --ttl
+#define DEFAULT_TTL     64
+
+#define DEFAULT_INTERVAL_MS 1000
 
 #define DEFAULT_PAYLOAD_SIZE 56
 #define ICMP_HDR_SIZE        sizeof(struct icmphdr)
@@ -30,26 +35,29 @@
 
 // '-?'   => prend le dessus sur tous  + entre quote sur zsh
 
+// 9223372036854775807
+
 typedef struct s_flags
 {
     int     has_version;    // -V
 
-    int     has_verbose;    // -v 
-    int     has_numeric;    // -n
-    int     has_quiet;      // -q
-    int     has_deadline;   // -w   max 2147483647 = INT MAX
-    int     has_timeout;    // -W   max 4294 = UINT_MAX / 1000000 (cap iputils en us)
-    int     has_packetsize; // -s   max 65507 =   65535 - 20 (IP hdr) - 8 (ICMP hdr)
-    int     has_interval;   // -i   max 2147483 = INT_MAX / 1000 (cap iputils en ms)
-    int     has_count;      // -c   max 9223372036854775807  =  LONG_MAX
+    int     has_verbose;    // -v
+
+    int     has_quiet;          // -q
+    int     has_deadline;       // -w     min 1, max 2147483647 (INT_MAX)
+    int     has_timeout;        // -W     min 1, max 2147483647 (INT_MAX)
+    int     has_packetsize;     // -s     min 0, max 65399 (IP_MAXPACKET - MAXIPLEN - MAXICMPLEN)
+    int     has_count;          // -c     unlimited
+    int     has_ttl;            // --ttl  min 1, max 255
+    int     has_ignore_routing; // -r     boolean (SO_DONTROUTE)
 
     int     has_help;       // -?
 
     int     deadline_value;       // -w : valeur du deadline global (en sec)
     int     timeout_value;        // -W : valeur du timeout par reply
     int     packetsize_value;     // -s : taille du payload en octets
-    int     interval_value;       // -i : intervalle (en sec)
     long    count_value;          // -c : nombre de paquets a send
+    int     ttl_value;            // --ttl : time-to-live IP
 
 
 }   t_flags;
@@ -135,20 +143,19 @@ void handle_flags(t_flags *flags);
 
 int icmp(t_flags *flags, uint8_t *target_ip, char *hostname, int socket_fd);
 int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats);
-uint16_t parse_error_original_seq(uint8_t *reply_buffer, ssize_t buffer_len);
 void print_stats(t_stats *stats, char *hostname);
 
 int setup_socket(t_flags *flags);
-unsigned short compute_checksum(void *data, int len);
 uint8_t *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size);
 int send_packet(uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size);
 void print_ping_prompt(uint8_t *target_ip, char *hostname, t_flags *flags);
-void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc, uint16_t orig_seq, t_flags *flags);
+void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc);
 void display_reply(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flags *flags, double rtt_ms);
 
 int ft_strcmp(char *s1, char *s2);
+int ft_strncmp(char *s1, char *s2, size_t n);
 void *ft_memset(void *s, int c, size_t n);
-void *ft_memcpy(void *dst, const void *src, size_t n);
+void *ft_memcpy(void *dst, void *src, size_t n);
 int ft_isnumber(char *s);
-long ft_strtol(const char *s, char **endptr);
+long ft_strtol(char *s, char **endptr);
 double ft_sqrt(double x);

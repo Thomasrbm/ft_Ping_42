@@ -87,7 +87,7 @@ int send_packet(uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t pac
     if (sendto(socket_fd, icmp_packet, packet_size, 0,
             (struct sockaddr *)&dest, sizeof(dest)) < 0)
     {
-        dprintf(2, "sendto: %s\n", strerror(errno));
+        dprintf(2, "ft_ping: sending packet: %s\n", strerror(errno));
         return -1;
     }
     return 0;
