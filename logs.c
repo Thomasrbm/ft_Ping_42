@@ -60,7 +60,47 @@ char *icmp_error_str(uint8_t type, uint8_t code)
     return "Unknown ICMP";
 }
 
-// -v : format inetutils-2.0  =>  "N bytes from IP: <error>"
+// dump du IP header embedded + decode + ligne ICMP, format inetutils-2.0
+static void print_ip_hdr_dump(const uint8_t *inner, size_t inner_len)
+{
+    if (inner_len < sizeof(struct iphdr))
+        return;
+    struct iphdr *ip = (struct iphdr *)inner;
+    size_t ihl = ip->ihl * 4;
+    if (inner_len < ihl)
+        return;
+
+    printf("IP Hdr Dump:\n ");
+    for (size_t i = 0; i + 1 < ihl; i += 2)
+        printf("%02x%02x ", inner[i], inner[i + 1]);
+    printf("\n");
+
+    printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst     Data\n");
+
+    char src[INET_ADDRSTRLEN];
+    char dst[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &ip->saddr, src, sizeof(src));
+    inet_ntop(AF_INET, &ip->daddr, dst, sizeof(dst));
+
+    uint16_t frag = ntohs(ip->frag_off);
+    uint8_t  flg  = (frag >> 13) & 0x07;
+    uint16_t off  = frag & 0x1FFF;
+
+    printf(" %1u  %1u  %02x %04x %04x %3u %04x  %02x  %02x %04x %s  %s \n",
+        ip->version, ip->ihl, ip->tos, ntohs(ip->tot_len), ntohs(ip->id),
+        flg, off, ip->ttl, ip->protocol, ntohs(ip->check), src, dst);
+
+    if (ip->protocol == IPPROTO_ICMP && inner_len >= ihl + ICMP_HDR_SIZE)
+    {
+        struct icmphdr *embedded = (struct icmphdr *)(inner + ihl);
+        size_t icmp_size = ntohs(ip->tot_len) - ihl;
+        printf("ICMP: type %u, code %u, size %zu, id 0x%04x, seq 0x%04x\n",
+            embedded->type, embedded->code, icmp_size,
+            ntohs(embedded->un.echo.id), ntohs(embedded->un.echo.sequence));
+    }
+}
+
+// -v : format inetutils-2.0  =>  "N bytes from IP: <error>" + IP Hdr Dump + ICMP info
 void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc)
 {
     char src_ip_str[INET_ADDRSTRLEN];
@@ -69,6 +109,7 @@ void print_verbose_error(struct sockaddr_in *from_ip, t_reply *reply_struc)
     printf("%zu bytes from %s: %s\n",
         reply_struc->icmp_size, src_ip_str,
         icmp_error_str(reply_struc->type, reply_struc->code));
+    print_ip_hdr_dump(reply_struc->inner_packet, reply_struc->inner_len); // infos erreur dans inner packet
 }
 
 void print_stats(t_stats *stats, char *hostname)
@@ -88,7 +129,7 @@ void print_stats(t_stats *stats, char *hostname)
         double variance = stats->rtt_sum_sq / stats->rtt_count - avg * avg;
         if (variance < 0)
             variance = 0;
-        double stddev = ft_sqrt(variance);
+        double stddev = sqrt(variance);
         printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
                stats->rtt_min, avg, stats->rtt_max, stddev);
     }

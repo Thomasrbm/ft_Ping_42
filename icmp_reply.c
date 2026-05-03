@@ -56,13 +56,18 @@ int parse_reply(uint8_t *reply_buffer, ssize_t buffer_len, t_reply *reply_struc)
         reply_struc->has_timestamp = 0;
     }
 
+    // pour les erreurs ICMP, le payload contient le packet original embedded (IP hdr + 8 octets transport)
+    // erreur              : [ Header IP : 20 octets ][ Header ICMP : 8 octets ][ Header IP orig : 20 octets ][ Header ICMP orig : 8 octets ]
+    reply_struc->inner_packet = (const uint8_t *)icmp_response + ICMP_HDR_SIZE; // ca met debut heade ip origine avec toutes infos d erreures
+    reply_struc->inner_len    = reply_struc->payload_size;
+
     return 1;
 }
 
 // inetutils-2.0 reste silencieux sur les timeouts : la perte n apparait que dans les stats finales
 int handle_recv_error(void)
 {
-    if (errno == EAGAIN || errno == EWOULDBLOCK) // EAGAIN / EWOULDBLOCK = pas de reply
+    if (errno == EAGAIN || errno == EWOULDBLOCK) // EAGAIN / EWOULDBLOCK = pas de reply / timeout (portabilite d avoir 2)
         return 0;
     dprintf(2, "recvfrom: %s\n", strerror(errno));
     return 0;
@@ -84,7 +89,7 @@ void handle_icmp_error(t_reply *reply_struc, struct sockaddr_in *from_ip, t_flag
 }
 
 // calcule le RTT et met a jour min/max/sum/sum^2/count, retourne le RTT en ms
-double update_rtt_stats(t_reply *reply_struc, t_stats *stats)
+double update_stats_calculate_rtt(t_reply *reply_struc, t_stats *stats)
 {
     if (!reply_struc->has_timestamp)
         return 0.0;
@@ -93,7 +98,7 @@ double update_rtt_stats(t_reply *reply_struc, t_stats *stats)
     gettimeofday(&recv_time, NULL);
 
     // temps d ecart en micro seconde sec
-    long delta_us = (recv_time.tv_sec - reply_struc->send_time.tv_sec) * 1000000L
+    long delta_us = (recv_time.tv_sec - reply_struc->send_time.tv_sec) * 1000000L // nous renvoit  notre temps d envoit a nous. 
                   + (recv_time.tv_usec - reply_struc->send_time.tv_usec);
 
     // mis en ms (unite au dessus (plus grande))
@@ -129,7 +134,7 @@ int receive_reply(int sockfd, uint16_t seq, t_flags *flags, t_stats *stats)
         return 0;
     }
 
-    double rtt_ms = update_rtt_stats(&reply_struc, stats);
+    double rtt_ms = update_stats_calculate_rtt(&reply_struc, stats);
     stats->received++;
     display_reply(&reply_struc, &from_ip, flags, rtt_ms);
     return 1;

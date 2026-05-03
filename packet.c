@@ -6,21 +6,23 @@
 
 // d habitude en sock_stream  le kernel le fait pour nous
 // en raw le kernell fait que le header ip
-unsigned short checksum(void *data, int len)
+
+// packet est uint8 , chechsum en 16 (16 car opti pour detection erreur transmission a  l epoque)
+unsigned short checksum(void *packet, int total_size)
 {
-    unsigned short *buf = data;
-    unsigned int    sum = 0;
+    unsigned short *buf = packet; // short car (mot de 16bits)
+    unsigned int    sum = 0; //  part 32 bit et refold en 16 a la fin
 
     // add tous les mots de 16 bits
-    while (len > 1)
+    while (total_size > 1)
     {
         sum += *buf;
         buf++;
-        len -= 2;
+        total_size -= 2;
     }
 
     // si len  impaire, ajouter le dernier octet
-    if (len == 1)
+    if (total_size == 1)
         sum += *(unsigned char *)buf;
 
     // on a add des  nombre de 16 bit mais peuvent depasser sur 32
@@ -32,7 +34,7 @@ unsigned short checksum(void *data, int len)
     sum += (sum >> 16);  // au cas où le repli a généré un nouveau carry
 
     //  Complément à 1 = inversion de tous les bit
-    return ~sum;
+    return ~sum; // reste plus que 16 de droit sont cast au return en 16 unsigne short
 }
 
 
@@ -57,7 +59,7 @@ uint8_t       *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size)
     icmp_header->code = 0;              // pas de sous-type pour Echo
     icmp_header->checksum = 0;  // remplir apres
 
-     // host to netword (little to big) x86 to protocol
+     // host to netword (little to big) x86 to protocol ip
     icmp_header->un.echo.id = htons(getpid() & 0xFFFF); // pid du echo current, pour distinguer plusieur ping parralleles
     icmp_header->un.echo.sequence = htons(seq); // identifie numero du paquet (dans la boucle d envoit de plusieur paquets)
 
@@ -77,12 +79,12 @@ uint8_t       *build_packet(t_flags *flags, uint16_t seq, size_t *packet_size)
 
 int send_packet(uint8_t *target_ip, int socket_fd, void *icmp_packet, size_t packet_size)
 {
-    struct sockaddr_in dest; // vers qui, quel ip, quel port ?(aucun) on envoit
+    struct sockaddr_in dest; // vers qui, quel ip, quel port ?(aucun ici) on envoit
 
-    ft_memset(&dest, 0, sizeof(dest));      // sin_zero à 0 (padding de la struct)
+    memset(&dest, 0, sizeof(dest));      // sin_zero à 0 (padding de la struct)
     dest.sin_family = AF_INET;              //  IPv4
     dest.sin_port = 0;                       // icmp use pas port
-    ft_memcpy(&dest.sin_addr, target_ip, 4); // copie ip cible
+    memcpy(&dest.sin_addr, target_ip, 4); // copie ip cible
 
     if (sendto(socket_fd, icmp_packet, packet_size, 0,
             (struct sockaddr *)&dest, sizeof(dest)) < 0)

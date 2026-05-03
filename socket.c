@@ -13,7 +13,7 @@ int setup_socket(t_flags *flags)
     if (socket_fd < 0)
     {
         dprintf(2, "socket: %s\n", strerror(errno));
-        return -1;  
+        return -1;
     }
 
     // ttl = compteur de 64 essai maximum dans un boucle de routeur (si + = routeur mal config)
@@ -22,17 +22,19 @@ int setup_socket(t_flags *flags)
     if (setsockopt(socket_fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) // option socket layer ip (3) : set la ttl
     {
         // IPPROTO_IP layer ip
+        close(socket_fd);
         dprintf(2, "socket: %s\n", strerror(errno));
         return -1;
     }
     // option a l envoie
 
     // -r : SO_DONTROUTE => bypass de la table de routage, le packet ne sort que si la dest est sur un reseau directement attache
-    if (flags->has_ignore_routing)
+    if (flags->has_ignore_router)
     {
-        int one = 1;
+        int one = 1; // boolen pour do not route
         if (setsockopt(socket_fd, SOL_SOCKET, SO_DONTROUTE, &one, sizeof(one)) < 0)
         {
+            close(socket_fd);
             dprintf(2, "socket: %s\n", strerror(errno));
             return -1;
         }
@@ -43,8 +45,10 @@ int setup_socket(t_flags *flags)
     struct timeval tv;
     tv.tv_sec = flags->has_timeout ? flags->timeout_value : 1;
     tv.tv_usec = 0;
-    if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) // option socket global  SO_RCVTIMEO flag qui dit on touche au timeout.
+    // fera recvfrom renverra -1 et EAGAIN dans errno
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) // option socket global  SO_RCVTIMEO flag qui dit on touche au timeout.. -W est auto
     {
+        close(socket_fd);
         dprintf(2, "socket: %s\n", strerror(errno));
         return -1;
     }

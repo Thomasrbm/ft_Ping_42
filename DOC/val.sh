@@ -106,13 +106,26 @@ test_flags() {
     run_test_fail "flag inconnu"          "$BIN -Z google.com"
     run_test_fail "-c sans valeur"        "$BIN -c"
     run_test_fail "-c valeur invalide"    "$BIN -c abc google.com"
-    run_test_fail "-c 0"                  "$BIN -c 0 google.com"
-    run_test_fail "-c negatif"            "$BIN -c -5 google.com"
+    # -c 0 et -c <negatif> : valeurs valides (quirk inet -> infini). Borne par -w 1 sinon ne s arrete jamais.
+    run_test      "-c 0 (infini, -w 1)"   "$BIN -c 0 -w 1 127.0.0.1"
+    run_test      "-c -5 (infini, -w 1)"  "$BIN -c -5 -w 1 127.0.0.1"
     run_test_fail "-s overflow"           "$BIN -s 99999 google.com"
+    run_test_fail "-s 65508 (just over)"  "$BIN -s 65508 google.com"
     run_test_fail "-w overflow"           "$BIN -w 99999999999 google.com"
+    run_test_fail "-w 0 (min 1)"          "$BIN -w 0 127.0.0.1"
     run_test_fail "-W overflow"           "$BIN -W 99999999999 google.com"
+    run_test_fail "-W 0 (min 1)"          "$BIN -W 0 127.0.0.1"
     run_test_fail "host invalide"         "$BIN nimportequoi.invalide.tld"
     run_test_fail "host vide"             "$BIN ''"
+    # --ttl (nouveau flag, range 1..255)
+    run_test_fail "--ttl=0 (too small)"   "$BIN --ttl=0 127.0.0.1"
+    run_test_fail "--ttl=256 (too big)"   "$BIN --ttl=256 127.0.0.1"
+    run_test_fail "--ttl=-1 (negatif)"    "$BIN --ttl=-1 127.0.0.1"
+    run_test_fail "--ttl=abc (non num)"   "$BIN --ttl=abc 127.0.0.1"
+    run_test_fail "--ttl seul (no val)"   "$BIN --ttl"
+    # flags supprimes (anciens -i / -n) -> doivent etre unknown
+    run_test_fail "-i (supprime)"         "$BIN -i 1 127.0.0.1"
+    run_test_fail "-n (supprime)"         "$BIN -n 127.0.0.1"
 }
 
 # ------------------------------------------------------------
@@ -123,15 +136,25 @@ test_basic() {
 
     run_test "ping localhost -c 3"        "$BIN -c 3 127.0.0.1"
     run_test "ping google -c 2"           "$BIN -c 2 google.com"
-    run_test "ping -n -c 2"               "$BIN -n -c 2 8.8.8.8"
     run_test "ping -q -c 3"               "$BIN -q -c 3 127.0.0.1"
     run_test "ping -v -c 2"               "$BIN -v -c 2 127.0.0.1"
     run_test "ping -s 0 (autorise)"       "$BIN -s 0 -c 2 127.0.0.1"
     run_test "ping -s 100 -c 2"           "$BIN -s 100 -c 2 127.0.0.1"
-    run_test "ping -s 65507 -c 1"         "$BIN -s 65507 -c 1 127.0.0.1"
-    run_test_fail "ping -i 0 (rejette)"   "$BIN -i 0 -c 3 127.0.0.1"
+    run_test "ping -s 65399 -c 1 (MAX)"   "$BIN -s 65399 -c 1 127.0.0.1"
     run_test "ping -w 2"                  "$BIN -w 2 127.0.0.1"
     run_test "ping -W 1 -c 2 ip morte"    "$BIN -W 1 -c 2 10.255.255.1"
+    # nouveaux flags : -r (SO_DONTROUTE) et --ttl
+    run_test "ping -r -c 2 local"         "$BIN -r -c 2 127.0.0.1"
+    run_test "ping --ttl=64 -c 2"         "$BIN --ttl=64 -c 2 127.0.0.1"
+    run_test "ping --ttl 64 -c 2 (sep)"   "$BIN --ttl 64 -c 2 127.0.0.1"
+    run_test "ping --ttl=255 -c 1"        "$BIN --ttl=255 -c 1 127.0.0.1"
+    run_test "ping --ttl=1 -c 1 local"    "$BIN --ttl=1 -c 1 127.0.0.1"
+    # quirk -c 0 / -c <neg> : infini, borne par -w
+    run_test "ping -c 0 -w 2 (inf borne)" "$BIN -c 0 -w 2 127.0.0.1"
+    run_test "ping -c -3 -w 2 (inf borne)" "$BIN -c -3 -w 2 127.0.0.1"
+    # combos
+    run_test "combo -v -c 2 -s 128 ttl"   "$BIN -v -c 2 -s 128 --ttl=64 127.0.0.1"
+    run_test "combo -q -r -c 2"           "$BIN -q -r -c 2 127.0.0.1"
 }
 
 # ------------------------------------------------------------
@@ -197,14 +220,15 @@ test_valgrind() {
     run_test "valgrind -c 3 google"       "$PREFIX $VG $BIN -c 3 google.com"
     run_test "valgrind -c sans val"       "$PREFIX $VG $BIN -c; rc=\$?; [ \$rc -ne 42 ]"
     run_test "valgrind -c abc"            "$PREFIX $VG $BIN -c abc 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
-    run_test "valgrind -c 0"              "$PREFIX $VG $BIN -c 0 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
-    run_test "valgrind -c -5"             "$PREFIX $VG $BIN -c -5 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    # -c 0 / -c -5 : infini comme inet -> borne par -w 1 sinon valgrind ne finit jamais
+    run_test "valgrind -c 0 -w 1"         "$PREFIX $VG $BIN -c 0 -w 1 127.0.0.1"
+    run_test "valgrind -c -5 -w 1"        "$PREFIX $VG $BIN -c -5 -w 1 127.0.0.1"
 
     # --- -s (packet size) ---
     run_test "valgrind -s 0 (autorise)"   "$PREFIX $VG $BIN -s 0 -c 2 127.0.0.1"
     run_test "valgrind -s 56 -c 2"        "$PREFIX $VG $BIN -s 56 -c 2 127.0.0.1"
     run_test "valgrind -s 1472 -c 2"      "$PREFIX $VG $BIN -s 1472 -c 2 127.0.0.1"
-    run_test "valgrind -s 65507 -c 1"     "$PREFIX $VG $BIN -s 65507 -c 1 127.0.0.1"
+    run_test "valgrind -s 65399 -c 1 MAX" "$PREFIX $VG $BIN -s 65399 -c 1 127.0.0.1"
     run_test "valgrind -s overflow"       "$PREFIX $VG $BIN -s 99999 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
 
     # NOTE: tout test impliquant une attente reelle (-w, -W sur ip morte,
@@ -213,8 +237,16 @@ test_valgrind() {
     # On garde uniquement : parsing errors (rejet immediat) + runs comptes (-c)
     # qui finissent sous la seconde sur localhost.
 
-    # --- -i (interval) : seul le rejet immediat ---
-    run_test "valgrind -i 0 (erreur)"     "$PREFIX $VG $BIN -i 0 -c 3 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    # --- flags supprimes (-i / -n) : doivent etre rejetes comme inconnus, sans leak ---
+    run_test "valgrind -i (supprime)"     "$PREFIX $VG $BIN -i 1 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind -n (supprime)"     "$PREFIX $VG $BIN -n 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+
+    # --- -s edge cases ---
+    run_test "valgrind -s 65508 (just>)"  "$PREFIX $VG $BIN -s 65508 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+
+    # --- -w / -W min (1) ---
+    run_test "valgrind -w 0 (rejet)"      "$PREFIX $VG $BIN -w 0 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
+    run_test "valgrind -W 0 (rejet)"      "$PREFIX $VG $BIN -W 0 127.0.0.1; rc=\$?; [ \$rc -ne 42 ]"
 
     # --- -w (deadline) : pas de run, juste parsing ---
     # (overflow skip aussi -> ft_strtol/cmp peut prendre du temps selon la val)
@@ -234,7 +266,7 @@ test_valgrind() {
     run_test "valgrind --ttl sans val"    "$PREFIX $VG $BIN --ttl; rc=\$?; [ \$rc -ne 42 ]"
 
     # --- -v / -n / -q ---
-    run_test "valgrind -v -n -q -c 2"     "$PREFIX $VG $BIN -v -n -q -c 2 127.0.0.1"
+    run_test "valgrind -v -q -c 2"        "$PREFIX $VG $BIN -v -q -c 2 127.0.0.1"
     run_test "valgrind -v -c 2 google"    "$PREFIX $VG $BIN -v -c 2 google.com"
     run_test "valgrind -q -c 3 local"     "$PREFIX $VG $BIN -q -c 3 127.0.0.1"
 

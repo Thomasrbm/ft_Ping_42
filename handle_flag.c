@@ -4,11 +4,11 @@ void version_flag(void)
 {
     printf("ft_ping v1.0\n");
     printf("the program copies : ping from (GNU inetutils) 2.0\n");
-    printf("Copyright (C) 2019 Free Software Foundation, Inc.\n");
+    printf("Copyright (C) 2026 Free Software Foundation, Inc.\n");
     printf("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n");
     printf("This is free software: you are free to change and redistribute it.\n");
     printf("There is NO WARRANTY, to the extent permitted by law.\n\n");
-    printf("Written by several authors.\n");
+    printf("Written by throbert.\n");
 }
 
 void help_flag(void)
@@ -19,7 +19,7 @@ void help_flag(void)
     printf("  -c NUMBER          stop after sending NUMBER packets\n");
     printf("  -q                 quiet output\n");
     printf("  -r                 send directly to a host on an attached network\n");
-    printf("      --ttl=N        specify N as time-to-live\n");
+    printf("    --ttl=N          specify N as time-to-live\n");
     printf("  -s NUMBER          send NUMBER data octets\n");
     printf("  -v                 verbose output\n");
     printf("  -w NUMBER          stop after NUMBER seconds\n");
